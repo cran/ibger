@@ -1,0 +1,34 @@
+Package: ibger
+Title: Access the 'IBGE' Aggregate Data API from 'R'
+Version: 0.1.0
+Authors@R: c(
+    person("Andre", "Leite", email = "leite@castlab.org", role = c("aut", "cre")),
+    person("Marcos", "Wasilew", email = "marcos.wasilew@gmail.com", role = "aut"),
+    person("Hugo", "Vasconcelos", email = "hugo.vasconcelos@ufpe.br", role = "aut"),
+    person("Carlos", "Amorin", email = "carlos.agaf@ufpe.br", role = "aut"),
+    person("Diogo", "Bezerra", email = "diogo.bezerra@ufpe.br", role = "aut"))
+Description: 'Tidyverse'-friendly interface to the Brazilian Institute of Geography and Statistics ('IBGE') aggregate data 'API' 
+    <https://servicodados.ibge.gov.br/api/docs/agregados?versao=3>. Query aggregates, variables, localities, periods, and metadata
+    from surveys and censuses conducted by 'IBGE'.
+License: MIT + file LICENSE
+URL: https://github.com/StrategicProjects/ibger
+BugReports: https://github.com/StrategicProjects/ibger/issues
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+Depends: R (>= 4.1.0)
+Imports: httr2 (>= 1.0.0), cli (>= 3.6.0), tibble, purrr, dplyr, rlang,
+        glue
+Suggests: knitr, rmarkdown, pkgdown, ggplot2, tidyr, shiny (>= 1.8.0),
+        DT, bslib (>= 0.6.0), bsicons, rstudioapi
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+NeedsCompilation: no
+Packaged: 2026-02-17 23:17:08 UTC; leite
+Author: Andre Leite [aut, cre],
+  Marcos Wasilew [aut],
+  Hugo Vasconcelos [aut],
+  Carlos Amorin [aut],
+  Diogo Bezerra [aut]
+Maintainer: Andre Leite <leite@castlab.org>
+Repository: CRAN
+Date/Publication: 2026-02-20 10:20:15 UTC
