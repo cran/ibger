@@ -13,22 +13,28 @@
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/StrategicProjects/ibger}
-  \item \url{https://strategicprojects.github.io/ibger/}
-  \item Report bugs at \url{https://github.com/StrategicProjects/ibger/issues}
+  \item \url{https://docs.ropensci.org/ibger/}
+  \item \url{https://github.com/ropensci/ibger}
+  \item Report bugs at \url{https://github.com/ropensci/ibger/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: Andre Leite \email{leite@castlab.org}
+\strong{Maintainer}: André Leite \email{leite@castlab.org} (\href{https://orcid.org/0000-0002-4718-9766}{ORCID})
 
 Authors:
 \itemize{
-  \item Andre Leite \email{leite@castlab.org}
-  \item Marcos Wasiliew \email{marcos.wasilew@gmail.com}
-  \item Hugo Vasconcelos \email{hugo.vasconcelos@ufpe.br}
-  \item Carlos Amorim \email{carlos.agaf@ufpe.br}
-  \item Diogo Bezerra \email{diogo.bezerra@ufpe.br}
+  \item André Leite \email{leite@castlab.org} (\href{https://orcid.org/0000-0002-4718-9766}{ORCID})
+  \item Marcos Wasiliew \email{marcos.wasiliew@gmail.com} (\href{https://orcid.org/0009-0004-4694-3159}{ORCID})
+  \item Hugo Vasconcelos \email{hugo.vasconcelos@ufpe.br} (\href{https://orcid.org/0000-0001-6249-0920}{ORCID})
+  \item Carlos Amorim \email{carlos.agaf@ufpe.br} (\href{https://orcid.org/0000-0001-6315-8305}{ORCID})
+  \item Diogo Bezerra \email{diogo.bezerra@ufpe.br} (\href{https://orcid.org/0000-0002-1216-8674}{ORCID})
+}
+
+Other contributors:
+\itemize{
+  \item Allan Quadros (\href{https://orcid.org/0000-0003-3250-5380}{ORCID}) (Reviewed the package for rOpenSci, see <https://github.com/ropensci/software-review/issues/787>) [reviewer]
+  \item Diana García-Cortés (\href{https://orcid.org/0000-0003-1562-7319}{ORCID}) (Reviewed the package for rOpenSci, see <https://github.com/ropensci/software-review/issues/787>) [reviewer]
 }
 
 }

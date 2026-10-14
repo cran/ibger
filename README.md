@@ -1,10 +1,14 @@
 # ibger <img src="man/figures/logo.svg" align="right" height="139" />
 
 <!-- badges: start -->
+[![Project Status: Active](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 ![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/ibger)  
 ![CRAN Downloads](https://cranlogs.r-pkg.org/badges/grand-total/ibger)
   ![License](https://img.shields.io/badge/license-MIT-darkviolet.svg) 
-![](https://img.shields.io/badge/devel%20version-0.1.0-blue.svg)
+![](https://img.shields.io/badge/devel%20version-0.2.1-blue.svg)
+[![R-CMD-check](https://github.com/ropensci/ibger/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ropensci/ibger/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/ropensci/ibger/graph/badge.svg)](https://app.codecov.io/gh/ropensci/ibger)
+[![Status at rOpenSci Software Peer Review](https://badges.ropensci.org/787_status.svg)](https://github.com/ropensci/software-review/issues/787)
 <!-- badges: end -->
 
 Tidyverse-friendly interface to the [IBGE Aggregate Data
@@ -15,16 +19,31 @@ IBGE (Brazilian Institute of Geography and Statistics).
 
 ## Installation
 
+Install the released version from CRAN:
+
 ``` r
-# install.packages("remotes")
-remotes::install_github("StrategicProjects/ibger")
+install.packages("ibger")
 ```
 
-> **Note**: if you encounter the error `curl_modify_url is not an exported object`,
-> update the curl package with `install.packages("curl")`. Version 6.0.0 or
-> higher is required.
+or the development version from
+[R-universe](https://ropensci.r-universe.dev/ibger):
+
+``` r
+install.packages("ibger", repos = c("https://ropensci.r-universe.dev",
+                                    "https://cloud.r-project.org"))
+```
+
+ibger requires curl >= 6.0.0 (declared in `DESCRIPTION`, so it is enforced at
+install time). If an existing installation raises the error
+`curl_modify_url is not an exported object`, update curl with
+`install.packages("curl")`.
 
 ## Quick start
+
+If you are new to the IBGE API, the vignette
+[Understanding the IBGE Aggregate Data API](https://docs.ropensci.org/ibger/articles/api-concepts.html)
+explains the terminology used below (aggregates, variables,
+classifications, localities, periods).
 
 ``` r
 library(ibger)
@@ -80,20 +99,20 @@ ibge_variables(
 In accordance with official IBGE data standards, the `value` column returned by the API may be
 of type `character` rather than numeric.
 
-This occurs because IBGE uses special symbols to represent specific data conditions, which are
-part of the statistical dissemination standard and should not be treated as errors.
+This occurs because IBGE uses special symbols (such as `-`, `..`, `...` and
+`X`) to represent specific data conditions, which are part of the statistical
+dissemination standard and should not be treated as errors.
 
-The possible values are:
+As a consequence, users should not assume that the `value` column is always
+numeric. Use
+[`parse_ibge_value()`](https://docs.ropensci.org/ibger/reference/parse_ibge_value.html)
+to convert it to numeric in one step — its documentation lists every special
+code and how it is handled:
 
-| Value | Meaning                                                        |
-|-------|----------------------------------------------------------------|
-| `-`   | Numeric zero (not resulting from rounding)                     |
-| `..`  | Not applicable                                                 |
-| `...` | Data not available                                             |
-| `X`   | Suppressed to avoid identifying individual respondents         |
-
-As a consequence, users should not assume that the `value` column is always numeric.
-When numerical analysis is required, these symbols must be handled explicitly before coercion.
+``` r
+ibge_variables(7060, localities = "BR") |>
+  dplyr::mutate(value = parse_ibge_value(value))
+```
 
 ## Design
 
@@ -144,53 +163,23 @@ When numerical analysis is required, these symbols must be handled explicitly be
 
 ## Interactive Aggregate Explorer
 
-The function `ibge_explorer()` launches an interactive Shiny application that allows you to browse, filter, and export the full catalog of IBGE aggregates available via the API.
+`ibge_explorer()` launches a Shiny application to browse, filter, and export
+the full catalog of IBGE aggregates available through the API. It is useful
+when you don't remember an aggregate ID, want to search by survey name, or
+prefer a visual look at the catalog before writing code: clicking a row
+displays the corresponding `ibge_metadata()` call, ready to copy.
 
-It is designed to make exploration easier before calling functions such as `ibge_metadata()`, `ibge_variables()`, or `ibge_aggregates()`.
-
-### ✨ Features
-
-- 📊 Summary value boxes with total counts  
-- 🔍 Global and column-level table filtering  
-- 🧭 Filter by survey  
-- 📥 CSV download of filtered results  
-- 🆔 Click a row to display the corresponding `ibge_metadata()` call  
-
----
-  
-### 🚀 Usage
-  
-  ```r
-# Open in RStudio Viewer (default behavior)
+``` r
+# Open in the RStudio Viewer (default)
 ibge_explorer()
 
-# Open in your system browser
+# Open in the system browser
 ibge_explorer(launch.browser = TRUE)
 ```
 
----
-  
-### 📦 Dependencies
-  
-The explorer requires the following packages:
-  
-- `shiny`
-- `DT`
-- `bslib`
-- `bsicons`
-
-If any of them are not installed, `ibge_explorer()` will display a friendly CLI error message.
-
----
-  
-### 💡 When to Use It?
-  
-Use `ibge_explorer()` when you:
-  
-- Don’t remember an aggregate ID  
-- Want to search by survey name  
-- Need a quick way to copy the correct `ibge_metadata()` call  
-- Prefer a visual workflow before writing code  
+The explorer requires the suggested packages `shiny`, `DT`, `bslib`, and
+`bsicons`; if any of them is missing, `ibge_explorer()` says which ones to
+install.
 
 
 ## Comparison with other packages
@@ -201,7 +190,7 @@ Several R packages provide access to IBGE data. Here is how ibger differs:
 |---------|-------|--------|----------------------|
 | Data source | IBGE Aggregates API (v3) | SIDRA API (`apisidra`) | IBGE microdata (FTP/download) |
 | API base URL | `servicodados.ibge.gov.br` | `apisidra.ibge.gov.br` | — |
-| Row limit per request | 100,000 | 20,000 | — |
+| Large queries | Automatic chunking (splits and combines requests) | Fails above 20,000 values | — |
 | Output | Tibbles (tidy, long format) | data.frames (wide by default) | survey design objects (`survey`) |
 | Parameter format | Named R lists | Positional + string codes | File paths / year + quarter |
 | Metadata discovery | Dedicated endpoints (`/metadados`, `/periodos`, `/localidades`) | HTML scraping of `desctabapi.aspx` | — |
@@ -221,9 +210,15 @@ alternative. Both packages access IBGE aggregate data, but they talk to
   API v3 (`servicodados.ibge.gov.br/api/v3/agregados`). IBGE's own
   documentation describes the Aggregates API as the standardized version
   of the SIDRA API.
-- **Higher row limit**: the SIDRA API caps responses at 20,000 rows
-  (sidrar's error message: *"more than 20k values"*); the Aggregates API
-  allows up to 100,000 values per request — a 5× increase.
+- **No practical size limit**: the SIDRA API caps responses at 20,000 rows
+  (sidrar's error message: *"more than 20k values"*) and leaves splitting
+  to the user. ibger estimates the result size before querying and, when it
+  exceeds the Aggregates API per-request limit, automatically splits the
+  query into multiple requests and combines the results
+  (`ibge_variables(..., chunk = TRUE)`, the default). Note that large
+  requests are slow on the server side: municipality-level queries
+  (`localities = "N6"`) can take one to several minutes per request to be
+  answered by the IBGE API — the function is not hanging.
 - **Structured metadata**: ibger queries dedicated JSON endpoints for
   metadata (`/metadados`, `/periodos`, `/localidades/{nivel}`). sidrar
   scrapes an HTML page (`desctabapi.aspx`) to discover classifications,
@@ -265,7 +260,7 @@ All data retrieved through this package is sourced from the
 [IBGE Aggregates API](https://servicodados.ibge.gov.br/api/docs/agregados?versao=3)
 and the [IBGE Metadata API](https://servicodados.ibge.gov.br/api/docs/metadados?versao=2)
 and remains the intellectual property of IBGE. Users must comply with IBGE's
-[terms of use](https://www.ibge.gov.br/acesso-informacao/institucional/termos-de-uso.html)
+[terms of use](https://www.ibge.gov.br/acesso-informacao/acoes-e-programas/politica-de-privacidade.html)
 when using, publishing, or redistributing the data.
 
 The data is provided **as-is**, without warranty of any kind. The package
@@ -275,3 +270,9 @@ refer to [ibge.gov.br](https://www.ibge.gov.br).
 
 API availability, rate limits, and response formats are controlled by IBGE
 and may change without notice.
+
+## Code of Conduct
+
+Please note that this package is released with a
+[Contributor Code of Conduct](https://ropensci.org/code-of-conduct/).
+By contributing to this project, you agree to abide by its terms.

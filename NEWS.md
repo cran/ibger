@@ -1,3 +1,121 @@
+# ibger 0.2.1
+
+* The package was peer-reviewed and accepted by rOpenSci
+  (ropensci/software-review#787). The repository moved to
+  <https://github.com/ropensci/ibger> and the documentation to
+  <https://docs.ropensci.org/ibger/>; the rOpenSci Code of Conduct now
+  applies.
+
+## Changes from the rOpenSci review (ropensci/software-review#787)
+
+### Second review (@ddiannae)
+
+* `parse_sidra_url()` / `fetch_sidra_url()`: a SIDRA URL without a `/p/`
+  (periods) segment no longer crashes the print method and the fetch; the
+  equivalent call falls back to the `ibge_variables()` default (last 6
+  periods) (reported by @ddiannae).
+* `parse_sidra_url()`: a territorial level that is not in the internal
+  lookup table (e.g. `n12`) no longer errors with "subscript out of
+  bounds". Levels that the aggregate does not offer now raise a warning at
+  parse time listing the available levels, and `fetch_sidra_url()` fails
+  through the regular validation (reported by @ddiannae).
+* `parse_sidra_url()`: URLs with several territorial levels (e.g.
+  `n1/all/n3/all`) produced an "Equivalent ibger call" with an unnamed
+  list that `ibge_variables()` rejects. The printed call and
+  `fetch_sidra_url()` now share one translation: a named list when every
+  level has specific codes, and the API's pipe syntax (`"N1|N3[33,35]"`)
+  otherwise (reported by @ddiannae).
+* `ibge_aggregates()` now checks the format of its five filters before the
+  request. The API silently drops filters it cannot parse (returning the
+  whole catalog under a success message) and answers HTTP 500 to others,
+  e.g. `periodicity = 30`; malformed values now abort with an example of
+  the expected format. An empty result is reported with a warning instead
+  of a green "0 aggregates found", and keeps the documented columns
+  (reported by @ddiannae).
+* `ibge_aggregates()`: the periodicity codes in the documentation were
+  wrong (`P10` and `P58` do not exist; `P13` is the rolling quarter, not
+  annual). The documented table now lists the codes observed in the
+  catalog: `P1` annual, `P5` monthly, `P8` semi-annual, `P9` quarterly,
+  `P13` rolling quarter, plus the multi-year codes (reported by @ddiannae).
+* `ibge_localities()` with several levels queries each level separately
+  and binds the results: the API's own multi-level endpoint returns an
+  empty list as soon as one of the levels has no localities for the
+  aggregate. An empty result now keeps the documented columns and is
+  reported with a warning (reported by @ddiannae).
+* The "exceeds the 100,000 value limit" hint on HTTP 500 is now only shown
+  for data requests (`ibge_variables()`); for the other endpoints, where a
+  500 means the API could not interpret the request (non-existent
+  aggregate, invalid filter), the message says so (reported by @ddiannae).
+* Vignettes: `getting-started` and `api-concepts` are now precomputed
+  against the live API like the other two (`vignettes/precompile.R`), so
+  every printed output is real. This removed a set of wrong hand-written
+  outputs — aggregate 1705 (IPCA-15) was described as the quarterly animal
+  slaughter table, which is 1092; the `ibge_variables(1705, localities =
+  "N3")` example (also in `?ibge_variables`) errors because 1705 has no
+  state level; `periodicity = "P10"` returned nothing — and replaced the
+  advice to split large queries by hand with a section on the automatic
+  chunking (`chunk`) in all three vignettes that mentioned the limit
+  (reported by @ddiannae; precomputing suggested by @beatrizmilz).
+* `ibge_localities()` example: `ibge_localities(1437, level = c("N6",
+  "N7"))` returned an empty tibble (1437 has no metropolitan-area
+  localities); the example now uses `c("N2", "N3")` (reported by
+  @ddiannae).
+
+### First review (@allanvc)
+
+* Fixed the `bsicons` availability check in `ibge_explorer()`, which told
+  users to install `bslib` instead of `bsicons` (reported by @allanvc).
+* Fixed the documentation of the `launch.browser` argument of
+  `ibge_explorer()`, which described `FALSE` as the default; the default is
+  and remains `TRUE` (open in the browser), and `FALSE` opens the app in the
+  RStudio Viewer pane (reported by @allanvc).
+* Documented the IBGE API's server-side latency for large queries in
+  `?ibge_variables` and the README: municipality-level requests can take one
+  to several minutes each (suggested by @allanvc).
+* README: replaced the link to IBGE's terms of use, whose old address now
+  returns a 404, with the current "Termo de Uso e Política de Privacidade"
+  page (reported by @allanvc).
+* Removed the stray `.Rhistory` file from the repository (suggested by
+  @allanvc).
+
+* `curl (>= 6.0.0)` is now declared in `Imports`, enforcing at install time
+  the version requirement that was previously only documented in the README
+  (older curl versions fail with `curl_modify_url is not an exported object`).
+* The table of IBGE special value codes (`-`, `..`, `...`, `X`) is now
+  documented in a single place — `?parse_ibge_value` — and linked from the
+  README and vignettes instead of being repeated.
+* The `ipca-example` and `tutorial` vignettes are now precompiled from
+  `.Rmd.orig` sources against the live IBGE API (`vignettes/precompile.R`),
+  so their output and ggplot2 figures render on the pkgdown site.
+* README: added the rOpenSci review badge, linked the API-concepts vignette
+  from the quick start, pointed the "Value column" section to
+  `parse_ibge_value()`, and rewrote the `ibge_explorer()` section to match
+  the tone of the rest of the page.
+* Examples no longer use `\dontrun{}`: examples that query the live IBGE
+  API (or launch the Shiny explorer) are now guarded with
+  `@examplesIf interactive()`, so they render in the docs and run for
+  interactive users without hitting the network during checks.
+* Internal refactor to address the remaining pkgcheck/goodpractice notes:
+  every function is now below the cyclomatic-complexity threshold of 15
+  (long functions such as `parse_sidra_url()`, `fetch_sidra_url()`,
+  `ibge_metadata()` and `ibge_survey_metadata()` were decomposed into
+  focused helpers), duplicated `@param` docs were replaced with
+  `@inheritParams`, and the lintr issues flagged in the review (long
+  lines, `expect_equal()` vs `expect_identical()`, static regexes without
+  `fixed = TRUE`, duplicate `cli` bullet names, `<<-`, `require()` in the
+  Shiny app, `setwd()` in `precompile.R`) were cleaned up. No user-facing
+  behavior changes.
+
+## Other changes
+
+* Expanded the test suite to cover all exported functions (~85% coverage):
+  pure helpers and parsers are tested directly, and API interactions are
+  tested against recorded fixtures with `httptest2` (no network needed).
+* Added continuous integration: `R CMD check` on Linux/macOS/Windows and
+  test coverage reporting via GitHub Actions.
+* Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` and `codemeta.json` in
+  preparation for rOpenSci submission.
+
 # ibger 0.2.0
 
 * `ibge_variables()` gains a `chunk` argument (default `TRUE`): queries whose

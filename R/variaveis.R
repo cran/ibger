@@ -7,6 +7,11 @@
 #' metadata. If any parameter is invalid, stops with a clear error message
 #' showing the allowed values.
 #'
+#' Note that large requests can be slow on the server side: queries covering
+#' all municipalities (`localities = "N6"`, some 5,500 localities) may take
+#' one to several minutes *per request* to be answered by the IBGE API, even
+#' before any chunking. This is normal — the function is not hanging.
+#'
 #' @param aggregate Numeric aggregate identifier (SIDRA table).
 #' @param variable Variable(s) to retrieve. Can be:
 #'   - `NULL` (default): returns all standard variables
@@ -47,13 +52,12 @@
 #'   `locality_id`, `locality_name`, `locality_level`,
 #'   `period`, `value`
 #'
-#' @examples
-#' \dontrun{
+#' @examplesIf interactive()
 #' # IPCA in Brazil
 #' ibge_variables(7060, localities = "BR")
 #'
-#' # Specific variables for states
-#' ibge_variables(1705, variable = c(284, 285), localities = "N3")
+#' # Specific variables for states (quarterly animal slaughter)
+#' ibge_variables(1092, variable = c(284, 285), localities = "N3")
 #'
 #' # Large query (all municipalities): split automatically into
 #' # multiple requests to respect the API's 100,000 value limit
@@ -67,8 +71,7 @@
 #'   localities     = list(N6 = c(3550308, 3304557)),
 #'   classification = list("226" = c(4844, 96608))
 #' )
-#' }
-#' 
+#'
 #'
 #' @export
 ibge_variables <- function(aggregate,
@@ -123,14 +126,16 @@ ibge_variables <- function(aggregate,
     data <- ibge_request(
       aggregate, "periodos", periods_str, "variaveis", variable_str,
       query = query,
-      .label = glue::glue("variables for aggregate {aggregate}")
+      .label = glue::glue("variables for aggregate {aggregate}"),
+      .data_request = TRUE
     )
 
     result <- parse_variables(data, view = view)
   } else {
     n_chunks <- length(plan)
     cli::cli_alert_info(
-      "Estimated result exceeds the API limit ({chunk_limit} values); splitting into {n_chunks} request{?s}."
+      "Estimated result exceeds the API limit ({chunk_limit} values);
+       splitting into {n_chunks} request{?s}."
     )
 
     pieces <- purrr::imap(plan, function(ch, i) {
@@ -141,7 +146,8 @@ ibge_variables <- function(aggregate,
           classificacao = classification_str,
           view          = view
         ),
-        .label = glue::glue("chunk {i}/{n_chunks} for aggregate {aggregate}")
+        .label = glue::glue("chunk {i}/{n_chunks} for aggregate {aggregate}"),
+        .data_request = TRUE
       )
       parse_variables(data, view = view)
     })

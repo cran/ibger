@@ -80,14 +80,19 @@ aggregate for the specified localities, periods and classifications.
 Before querying the API, validates all parameters against the aggregate
 metadata. If any parameter is invalid, stops with a clear error message
 showing the allowed values.
+
+Note that large requests can be slow on the server side: queries covering
+all municipalities (\code{localities = "N6"}, some 5,500 localities) may take
+one to several minutes \emph{per request} to be answered by the IBGE API, even
+before any chunking. This is normal — the function is not hanging.
 }
 \examples{
-\dontrun{
+\dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 # IPCA in Brazil
 ibge_variables(7060, localities = "BR")
 
-# Specific variables for states
-ibge_variables(1705, variable = c(284, 285), localities = "N3")
+# Specific variables for states (quarterly animal slaughter)
+ibge_variables(1092, variable = c(284, 285), localities = "N3")
 
 # Large query (all municipalities): split automatically into
 # multiple requests to respect the API's 100,000 value limit
@@ -101,7 +106,6 @@ ibge_variables(
   localities     = list(N6 = c(3550308, 3304557)),
   classification = list("226" = c(4844, 96608))
 )
-}
 
-
+\dontshow{\}) # examplesIf}
 }

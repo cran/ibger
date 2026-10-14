@@ -341,6 +341,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
+<!--
+getting-started.Rmd is generated from getting-started.Rmd.orig by
+vignettes/precompile.R, which runs the code against the live IBGE API.
+Edit the .orig file, then re-run the script and commit the regenerated .Rmd.
+-->
 <div id="overview" class="section level2">
 <h2>Overview</h2>
 <p><strong>ibger</strong> provides a tidyverse-friendly interface to the
@@ -351,11 +356,19 @@ Institute of Geography and Statistics (IBGE).</p>
 <p>Each SIDRA table corresponds to an <strong>aggregate</strong> in the
 API. With ibger you can browse aggregates, inspect their metadata, and
 retrieve tidy data — all from R.</p>
+<p>All the output shown in this vignette was produced by running the
+code against the live API when the vignette was last built (see the date
+at the end); numbers such as the catalog size or the latest period will
+change over time.</p>
 </div>
 <div id="installation" class="section level2">
 <h2>Installation</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># install.packages(&quot;remotes&quot;)</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;StrategicProjects/ibger&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># CRAN release</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;ibger&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># Development version</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># install.packages(&quot;remotes&quot;)</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;ropensci/ibger&quot;</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(ibger)</span></code></pre></div>
 </div>
 <div id="a-typical-workflow" class="section level2">
@@ -363,91 +376,256 @@ retrieve tidy data — all from R.</p>
 <div id="step-1-find-an-aggregate" class="section level3">
 <h3>Step 1 — Find an aggregate</h3>
 <p>Use <code>ibge_aggregates()</code> to list every aggregate grouped by
-survey. Optional filters let you narrow the search:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># All aggregates</span></span>
+survey. Optional filters let you narrow the search. Subject codes come
+from <code>ibge_subjects()</code>; <code>70</code> is “Abate de animais”
+(animal slaughter):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># All aggregates (the catalog is large: only the first rows are shown)</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">ibge_aggregates</span>()</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; ✔ 1420 aggregates found.</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1,420 × 4</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;   survey_id survey_name          aggregate_id aggregate_name</span></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;     &lt;chr&gt;                &lt;chr&gt;        &lt;chr&gt;</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; 1 AB        Abate de animais     1705         Animais abatidos …</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; 2 AB        Abate de animais     1706         Peso total das ca…</span></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt; ...</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co"># Monthly aggregates only</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">periodicity =</span> <span class="st">&quot;P5&quot;</span>)</span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co"># Aggregates with municipality-level data</span></span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">level =</span> <span class="st">&quot;N6&quot;</span>)</span></code></pre></div>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching aggregates from IBGE API...</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching aggregates from IBGE API... [755ms]</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; ✔ 9336 aggregates found.</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; # A tibble: 9,336 × 4</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;    survey_id survey_name                             aggregate_id aggregate_name</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;chr&gt;                                   &lt;chr&gt;        &lt;chr&gt;         </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;  1 D5        &quot;Áreas Urbanizadas do Brasil&quot;           10763        Áreas urbaniz…</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;  2 D5        &quot;Áreas Urbanizadas do Brasil&quot;           8418         Áreas urbaniz…</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;  3 EO        &quot;Avaliação dos dados sobre a Biodivers… 10510        Índice de con…</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;  4 EO        &quot;Avaliação dos dados sobre a Biodivers… 10511        Quantidade de…</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;  5 EO        &quot;Avaliação dos dados sobre a Biodivers… 10512        Categorias de…</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt;  6 CL        &quot;Cadastro Central de Empresas&quot;          1685         Unidades loca…</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt;  7 CL        &quot;Cadastro Central de Empresas&quot;          1732         Dados gerais …</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt;  8 CL        &quot;Cadastro Central de Empresas&quot;          1733         Dados gerais …</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co">#&gt;  9 CL        &quot;Cadastro Central de Empresas&quot;          1734         Dados gerais …</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co">#&gt; 10 CL        &quot;Cadastro Central de Empresas&quot;          1735         Dados gerais …</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co">#&gt; # ℹ 9,326 more rows</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a><span class="co"># One subject: animal slaughter</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">subject =</span> <span class="dv">70</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching aggregates from IBGE API...</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching aggregates from IBGE API... [155ms]</span></span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="co">#&gt; ✔ 16 aggregates found.</span></span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="co">#&gt; # A tibble: 16 × 4</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a><span class="co">#&gt;    survey_id survey_name                             aggregate_id aggregate_name</span></span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;chr&gt;                                   &lt;chr&gt;        &lt;chr&gt;         </span></span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a><span class="co">#&gt;  1 AB        Pesquisa Mensal de Abate de Animais     19           Quantidade de…</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a><span class="co">#&gt;  2 AB        Pesquisa Mensal de Abate de Animais     20           Peso das carc…</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a><span class="co">#&gt;  3 AB        Pesquisa Mensal de Abate de Animais     41           Quantidade de…</span></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co">#&gt;  4 AB        Pesquisa Mensal de Abate de Animais     42           Quantidade de…</span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co">#&gt;  5 AB        Pesquisa Mensal de Abate de Animais     43           Quantidade de…</span></span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a><span class="co">#&gt;  6 AB        Pesquisa Mensal de Abate de Animais     44           Quantidade de…</span></span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a><span class="co">#&gt;  7 AB        Pesquisa Mensal de Abate de Animais     45           Peso das carc…</span></span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a><span class="co">#&gt;  8 AB        Pesquisa Mensal de Abate de Animais     46           Peso das carc…</span></span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a><span class="co">#&gt;  9 AB        Pesquisa Mensal de Abate de Animais     47           Peso das carc…</span></span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a><span class="co">#&gt; 10 AB        Pesquisa Mensal de Abate de Animais     48           Peso das carc…</span></span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a><span class="co">#&gt; 11 AX        Pesquisa Trimestral do Abate de Animais 1092         Número de inf…</span></span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a><span class="co">#&gt; 12 AX        Pesquisa Trimestral do Abate de Animais 1093         Número de inf…</span></span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a><span class="co">#&gt; 13 AX        Pesquisa Trimestral do Abate de Animais 1094         Número de inf…</span></span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a><span class="co">#&gt; 14 AX        Pesquisa Trimestral do Abate de Animais 6669         Quantidade e …</span></span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a><span class="co">#&gt; 15 AX        Pesquisa Trimestral do Abate de Animais 6829         Quantidade e …</span></span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a><span class="co">#&gt; 16 AX        Pesquisa Trimestral do Abate de Animais 9395         Número de inf…</span></span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a></span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a><span class="co"># Monthly aggregates only</span></span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">periodicity =</span> <span class="st">&quot;P5&quot;</span>)</span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching aggregates from IBGE API...</span></span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching aggregates from IBGE API... [75ms]</span></span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a><span class="co">#&gt; ✔ 288 aggregates found.</span></span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a><span class="co">#&gt; # A tibble: 288 × 4</span></span>
+<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a><span class="co">#&gt;    survey_id survey_name                            aggregate_id aggregate_name </span></span>
+<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;chr&gt;                                  &lt;chr&gt;        &lt;chr&gt;          </span></span>
+<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a><span class="co">#&gt;  1 IL        Índice de Preços ao Consumidor em Real 86           IPCR - Percent…</span></span>
+<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a><span class="co">#&gt;  2 IL        Índice de Preços ao Consumidor em Real 89           IPCR - Peso no…</span></span>
+<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a><span class="co">#&gt;  3 IR        Índice de Preços ao Produtor           3104         Índice de Preç…</span></span>
+<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a><span class="co">#&gt;  4 IR        Índice de Preços ao Produtor           5796         Índice de Preç…</span></span>
+<span id="cb3-61"><a href="#cb3-61" tabindex="-1"></a><span class="co">#&gt;  5 IR        Índice de Preços ao Produtor           5800         Índice de Preç…</span></span>
+<span id="cb3-62"><a href="#cb3-62" tabindex="-1"></a><span class="co">#&gt;  6 IR        Índice de Preços ao Produtor           6723         Índice de Preç…</span></span>
+<span id="cb3-63"><a href="#cb3-63" tabindex="-1"></a><span class="co">#&gt;  7 IR        Índice de Preços ao Produtor           6903         Índice de Preç…</span></span>
+<span id="cb3-64"><a href="#cb3-64" tabindex="-1"></a><span class="co">#&gt;  8 IR        Índice de Preços ao Produtor           6904         Índice de Preç…</span></span>
+<span id="cb3-65"><a href="#cb3-65" tabindex="-1"></a><span class="co">#&gt;  9 IJ        Índice de Reajuste do Salário Mínimo   90           IRSM - Percent…</span></span>
+<span id="cb3-66"><a href="#cb3-66" tabindex="-1"></a><span class="co">#&gt; 10 IJ        Índice de Reajuste do Salário Mínimo   91           IRSM - Peso no…</span></span>
+<span id="cb3-67"><a href="#cb3-67" tabindex="-1"></a><span class="co">#&gt; # ℹ 278 more rows</span></span>
+<span id="cb3-68"><a href="#cb3-68" tabindex="-1"></a></span>
+<span id="cb3-69"><a href="#cb3-69" tabindex="-1"></a><span class="co"># Aggregates with municipality-level data</span></span>
+<span id="cb3-70"><a href="#cb3-70" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">level =</span> <span class="st">&quot;N6&quot;</span>)</span>
+<span id="cb3-71"><a href="#cb3-71" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching aggregates from IBGE API...</span></span>
+<span id="cb3-72"><a href="#cb3-72" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching aggregates from IBGE API... [1.2s]</span></span>
+<span id="cb3-73"><a href="#cb3-73" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-74"><a href="#cb3-74" tabindex="-1"></a><span class="co">#&gt; ✔ 4448 aggregates found.</span></span>
+<span id="cb3-75"><a href="#cb3-75" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4,448 × 4</span></span>
+<span id="cb3-76"><a href="#cb3-76" tabindex="-1"></a><span class="co">#&gt;    survey_id survey_name                             aggregate_id aggregate_name</span></span>
+<span id="cb3-77"><a href="#cb3-77" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;     &lt;chr&gt;                                   &lt;chr&gt;        &lt;chr&gt;         </span></span>
+<span id="cb3-78"><a href="#cb3-78" tabindex="-1"></a><span class="co">#&gt;  1 D5        &quot;Áreas Urbanizadas do Brasil&quot;           10763        Áreas urbaniz…</span></span>
+<span id="cb3-79"><a href="#cb3-79" tabindex="-1"></a><span class="co">#&gt;  2 D5        &quot;Áreas Urbanizadas do Brasil&quot;           8418         Áreas urbaniz…</span></span>
+<span id="cb3-80"><a href="#cb3-80" tabindex="-1"></a><span class="co">#&gt;  3 EO        &quot;Avaliação dos dados sobre a Biodivers… 10510        Índice de con…</span></span>
+<span id="cb3-81"><a href="#cb3-81" tabindex="-1"></a><span class="co">#&gt;  4 EO        &quot;Avaliação dos dados sobre a Biodivers… 10511        Quantidade de…</span></span>
+<span id="cb3-82"><a href="#cb3-82" tabindex="-1"></a><span class="co">#&gt;  5 EO        &quot;Avaliação dos dados sobre a Biodivers… 10512        Categorias de…</span></span>
+<span id="cb3-83"><a href="#cb3-83" tabindex="-1"></a><span class="co">#&gt;  6 CL        &quot;Cadastro Central de Empresas&quot;          1685         Unidades loca…</span></span>
+<span id="cb3-84"><a href="#cb3-84" tabindex="-1"></a><span class="co">#&gt;  7 CL        &quot;Cadastro Central de Empresas&quot;          1734         Dados gerais …</span></span>
+<span id="cb3-85"><a href="#cb3-85" tabindex="-1"></a><span class="co">#&gt;  8 CL        &quot;Cadastro Central de Empresas&quot;          1735         Dados gerais …</span></span>
+<span id="cb3-86"><a href="#cb3-86" tabindex="-1"></a><span class="co">#&gt;  9 CL        &quot;Cadastro Central de Empresas&quot;          2933         Empresas e ou…</span></span>
+<span id="cb3-87"><a href="#cb3-87" tabindex="-1"></a><span class="co">#&gt; 10 CL        &quot;Cadastro Central de Empresas&quot;          3421         Unidades loca…</span></span>
+<span id="cb3-88"><a href="#cb3-88" tabindex="-1"></a><span class="co">#&gt; # ℹ 4,438 more rows</span></span></code></pre></div>
+<p>The filters are checked before the request: the API silently ignores
+values it cannot parse, so a typo would otherwise return the whole
+catalog.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">ibge_aggregates</span>(<span class="at">periodicity =</span> <span class="st">&quot;monthly&quot;</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; ! Invalid `periodicity` filter: &quot;monthly&quot;.</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; ℹ Expected a single value like &quot;P5&quot;.</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; ℹ See `?ibge_aggregates` for the accepted formats.</span></span></code></pre></div>
 </div>
 <div id="step-2-inspect-the-metadata" class="section level3">
 <h3>Step 2 — Inspect the metadata</h3>
 <p>Once you have an aggregate ID, <code>ibge_metadata()</code> tells you
-everything about its structure:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">ibge_metadata</span>(<span class="dv">1705</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>meta</span></code></pre></div>
-<p>The print method shows a structured summary:</p>
-<pre><code>── Animais abatidos ──
-ID: 1705
-Survey: Pesquisa Trimestral do Abate de Animais
-Periodicity: trimestral (200101 to 202404)
-Territorial levels: N1, N2, N3
-
-── Variables (2) ──
-  284: Número de informantes (Unidades)
-  285: Cabeças abatidas (Cabeças)
-
-── Classifications (1) ──
-  12529: Tipo de rebanho bovino (9 categories)
-    115236: Total [level 0]
-    115237: Bois [level 1]
-    115238: Vacas [level 1]
-    ...</code></pre>
+everything about its structure. Aggregate <strong>1092</strong> is the
+quarterly animal slaughter table (number of establishments, animals
+slaughtered and carcass weight):</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">ibge_metadata</span>(<span class="dv">1092</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for aggregate 1092 from IBGE API...</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for aggregate 1092 from IBGE API... [161ms]</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories.</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>meta</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; ── Número de informantes, Quantidade e Peso total das carcaças dos bovinos abati</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; ID: 1092</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; Survey: Pesquisa Trimestral do Abate de Animais</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; Subject: Abate de animais</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; Periodicity: trimestral (199701 to 202602)</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; Territorial levels: N1, N3</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">#&gt; ── Variables (6) ──</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="co">#&gt;   151: Número de informantes (Unidades)</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt;   1000151: Número de informantes - percentual do total geral (%)</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt;   284: Animais abatidos (Cabeças)</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt;   1000284: Animais abatidos - percentual do total geral (%)</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt;   285: Peso total das carcaças (Quilogramas)</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt;   1000285: Peso total das carcaças - percentual do total geral (%)</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a><span class="co">#&gt; ── Classifications (3) ──</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a><span class="co">#&gt;   12716: Referência temporal (4 categories)</span></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co">#&gt; 115236: Total do trimestre [level 0]</span></span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a><span class="co">#&gt; 115233: No 1º mês [level 1]</span></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a><span class="co">#&gt; 115234: No 2º mês [level 1]</span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="co">#&gt; 115235: No 3º mês [level 1]</span></span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a><span class="co">#&gt;   18: Tipo de rebanho bovino (6 categories)</span></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="co">#&gt; 992: Total [level 0]</span></span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a><span class="co">#&gt; 55: Bois [level 1]</span></span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a><span class="co">#&gt; 56: Vacas [level 1]</span></span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a><span class="co">#&gt; 111734: Novilhos [level 1]</span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="co">#&gt; 111735: Novilhas [level 1]</span></span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co">#&gt; ... and 1 more categories</span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="co">#&gt;   12529: Tipo de inspeção (4 categories)</span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="co">#&gt; 118225: Total [level 0]</span></span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="co">#&gt; 111737: Federal [level 1]</span></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="co">#&gt; 111738: Estadual [level 1]</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a><span class="co">#&gt; 111739: Municipal [level 1]</span></span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="co">#&gt; Use `meta$variables` and `meta$classifications` to access the data.</span></span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a><span class="co">#&gt; Use `tidyr::unnest(meta$classifications, categories)` to unnest.</span></span></code></pre></div>
 <p>Each component is accessible directly:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>meta<span class="sc">$</span>variables</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 3</span></span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;   id    name                  unit</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                 &lt;chr&gt;</span></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; 1 284   Número de informantes Unidades</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 2 285   Cabeças abatidas      Cabeças</span></span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>meta<span class="sc">$</span>classifications</span>
-<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 3</span></span>
-<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt;   id    name                        categories</span></span>
-<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                       &lt;list&gt;</span></span>
-<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; 1 12529 Tipo de rebanho bovino      &lt;tibble [9 × 4]&gt;</span></span>
-<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co"># Unnest to see every category</span></span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">unnest</span>(meta<span class="sc">$</span>classifications, categories)</span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co"># Geographic levels</span></span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>meta<span class="sc">$</span>territorial_level</span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; $administrative</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; [1] &quot;N1&quot; &quot;N2&quot; &quot;N3&quot;</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co"># Time range</span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>meta<span class="sc">$</span>periodicity</span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; $frequency [1] &quot;trimestral&quot;</span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; $start     [1] &quot;200101&quot;</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; $end       [1] &quot;202404&quot;</span></span></code></pre></div>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 3</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt;   id      name                                                unit       </span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;   &lt;chr&gt;                                               &lt;chr&gt;      </span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt; 1 151     Número de informantes                               Unidades   </span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 2 1000151 Número de informantes - percentual do total geral   %          </span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 3 284     Animais abatidos                                    Cabeças    </span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; 4 1000284 Animais abatidos - percentual do total geral        %          </span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 5 285     Peso total das carcaças                             Quilogramas</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; 6 1000285 Peso total das carcaças - percentual do total geral %</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>meta<span class="sc">$</span>classifications</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 3</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt;   id    name                   categories      </span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                  &lt;list&gt;          </span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; 1 12716 Referência temporal    &lt;tibble [4 × 4]&gt;</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt; 2 18    Tipo de rebanho bovino &lt;tibble [6 × 4]&gt;</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; 3 12529 Tipo de inspeção       &lt;tibble [4 × 4]&gt;</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co"># Unnest to see every category</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">unnest</span>(meta<span class="sc">$</span>classifications, categories)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; # A tibble: 14 × 6</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;    id    name             category_id category_name category_unit category_level</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt; &lt;chr&gt;            &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;         </span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;  1 12716 Referência temp… 115236      Total do tri… &lt;NA&gt;          0             </span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;  2 12716 Referência temp… 115233      No 1º mês     &lt;NA&gt;          1             </span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt;  3 12716 Referência temp… 115234      No 2º mês     &lt;NA&gt;          1             </span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt;  4 12716 Referência temp… 115235      No 3º mês     &lt;NA&gt;          1             </span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt;  5 18    Tipo de rebanho… 992         Total         &lt;NA&gt;          0             </span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt;  6 18    Tipo de rebanho… 55          Bois          &lt;NA&gt;          1             </span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;  7 18    Tipo de rebanho… 56          Vacas         &lt;NA&gt;          1             </span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt;  8 18    Tipo de rebanho… 111734      Novilhos      &lt;NA&gt;          1             </span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt;  9 18    Tipo de rebanho… 111735      Novilhas      &lt;NA&gt;          1             </span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 10 18    Tipo de rebanho… 57          Vitelos e vi… &lt;NA&gt;          1             </span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt; 11 12529 Tipo de inspeção 118225      Total         &lt;NA&gt;          0             </span></span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="co">#&gt; 12 12529 Tipo de inspeção 111737      Federal       &lt;NA&gt;          1             </span></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; 13 12529 Tipo de inspeção 111738      Estadual      &lt;NA&gt;          1             </span></span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="co">#&gt; 14 12529 Tipo de inspeção 111739      Municipal     &lt;NA&gt;          1</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a></span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="co"># Geographic levels</span></span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>meta<span class="sc">$</span>territorial_level</span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="co">#&gt; $administrative</span></span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="co">#&gt; [1] &quot;N1&quot; &quot;N3&quot;</span></span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="co">#&gt; $special</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt; character(0)</span></span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt; $ibge</span></span>
+<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="co">#&gt; character(0)</span></span>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a></span>
+<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a><span class="co"># Time range</span></span>
+<span id="cb6-52"><a href="#cb6-52" tabindex="-1"></a>meta<span class="sc">$</span>periodicity</span>
+<span id="cb6-53"><a href="#cb6-53" tabindex="-1"></a><span class="co">#&gt; $frequency</span></span>
+<span id="cb6-54"><a href="#cb6-54" tabindex="-1"></a><span class="co">#&gt; [1] &quot;trimestral&quot;</span></span>
+<span id="cb6-55"><a href="#cb6-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-56"><a href="#cb6-56" tabindex="-1"></a><span class="co">#&gt; $start</span></span>
+<span id="cb6-57"><a href="#cb6-57" tabindex="-1"></a><span class="co">#&gt; [1] 199701</span></span>
+<span id="cb6-58"><a href="#cb6-58" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-59"><a href="#cb6-59" tabindex="-1"></a><span class="co">#&gt; $end</span></span>
+<span id="cb6-60"><a href="#cb6-60" tabindex="-1"></a><span class="co">#&gt; [1] 202602</span></span></code></pre></div>
 </div>
 <div id="step-3-retrieve-data" class="section level3">
 <h3>Step 3 — Retrieve data</h3>
-<p><code>ibge_variables()</code> is the main workhorse. It sends a
-single request and returns a tidy tibble:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; ✔ 12 records retrieved.</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 12 × 9</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name      variable_unit classification_12529</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;              &lt;chr&gt;         &lt;chr&gt;</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 1 284         Número de inform…  Unidades      Total</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 2 285         Cabeças abatidas   Cabeças       Total</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; ...</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;   locality_id locality_name locality_level period value</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;          &lt;chr&gt;  &lt;chr&gt;</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; 1 1           Brasil        Brasil         202303 2584</span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; 2 1           Brasil        Brasil         202303 7802044</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; ...</span></span></code></pre></div>
+<p><code>ibge_variables()</code> is the main workhorse. It sends the
+request and returns a tidy tibble (one row per variable × locality ×
+period × category):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [73ms]</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; ✔ 18 records retrieved.</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; # A tibble: 18 × 11</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt;    variable_id variable_name           variable_unit classification_18</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;                   &lt;chr&gt;         &lt;chr&gt;            </span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt;  1 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt;  2 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt;  3 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt;  4 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt;  5 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt;  6 151         Número de informantes   Unidades      Total            </span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt;  7 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;  8 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;  9 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt; 10 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; 11 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt; 12 284         Animais abatidos        Cabeças       Total            </span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt; 13 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt; 14 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="co">#&gt; 15 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="co">#&gt; 16 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; 17 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="co">#&gt; 18 285         Peso total das carcaças Quilogramas   Total            </span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; # ℹ 7 more variables: classification_12529 &lt;chr&gt;, classification_12716 &lt;chr&gt;,</span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="co">#&gt; #   locality_id &lt;chr&gt;, locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span></code></pre></div>
 </div>
 </div>
 <div id="specifying-localities" class="section level2">
@@ -455,16 +633,87 @@ single request and returns a tidy tibble:</p>
 <p>The <code>localities</code> parameter accepts several convenient
 formats:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Country total</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># All states</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">8884</span>, <span class="at">localities =</span> <span class="st">&quot;N3&quot;</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># Specific states (RJ = 33, SP = 35)</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">8884</span>, <span class="at">localities =</span> <span class="fu">list</span>(<span class="at">N3 =</span> <span class="fu">c</span>(<span class="dv">33</span>, <span class="dv">35</span>)))</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co"># Mix levels: metropolitan areas + a specific municipality</span></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">localities =</span> <span class="fu">list</span>(<span class="at">N7 =</span> <span class="fu">c</span>(<span class="dv">3501</span>, <span class="dv">3301</span>), <span class="at">N6 =</span> <span class="dv">5208707</span>))</span></code></pre></div>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [74ms]</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; ✔ 1 record retrieved.</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 11</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name variable_unit classification_18 classification_12529</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;             &lt;chr&gt;               </span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; 1 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; # ℹ 6 more variables: classification_12716 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co"># All states</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">localities =</span> <span class="st">&quot;N3&quot;</span>)</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching N3 localities for aggregate 1092 from IBGE API...</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching N3 localities for aggregate 1092 from IBGE API... [142ms]</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [69ms]</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; ✔ 27 records retrieved.</span></span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; # A tibble: 27 × 11</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt;    variable_id variable_name    variable_unit classification_18</span></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;            &lt;chr&gt;         &lt;chr&gt;            </span></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;  1 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt;  2 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt;  3 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt;  4 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt;  5 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt;  6 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;  7 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;  8 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt;  9 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; 10 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; # ℹ 17 more rows</span></span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt; # ℹ 7 more variables: classification_12529 &lt;chr&gt;, classification_12716 &lt;chr&gt;,</span></span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt; #   locality_id &lt;chr&gt;, locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a></span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="co"># Specific states (RJ = 33, SP = 35)</span></span>
+<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">1</span>,</span>
+<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a>               <span class="at">localities =</span> <span class="fu">list</span>(<span class="at">N3 =</span> <span class="fu">c</span>(<span class="dv">33</span>, <span class="dv">35</span>)))</span>
+<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [69ms]</span></span>
+<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="co">#&gt; ✔ 2 records retrieved.</span></span>
+<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 11</span></span>
+<span id="cb8-55"><a href="#cb8-55" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name variable_unit classification_18 classification_12529</span></span>
+<span id="cb8-56"><a href="#cb8-56" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;             &lt;chr&gt;               </span></span>
+<span id="cb8-57"><a href="#cb8-57" tabindex="-1"></a><span class="co">#&gt; 1 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb8-58"><a href="#cb8-58" tabindex="-1"></a><span class="co">#&gt; 2 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb8-59"><a href="#cb8-59" tabindex="-1"></a><span class="co">#&gt; # ℹ 6 more variables: classification_12716 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb8-60"><a href="#cb8-60" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb8-61"><a href="#cb8-61" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" tabindex="-1"></a><span class="co"># Mix levels: two metropolitan areas + one municipality</span></span>
+<span id="cb8-63"><a href="#cb8-63" tabindex="-1"></a><span class="co"># (IPCA, aggregate 7060, is published for metropolitan areas and capitals)</span></span>
+<span id="cb8-64"><a href="#cb8-64" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">variable =</span> <span class="dv">63</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">1</span>,</span>
+<span id="cb8-65"><a href="#cb8-65" tabindex="-1"></a>               <span class="at">localities =</span> <span class="fu">list</span>(<span class="at">N7 =</span> <span class="fu">c</span>(<span class="dv">3501</span>, <span class="dv">3301</span>), <span class="at">N6 =</span> <span class="dv">5208707</span>))</span>
+<span id="cb8-66"><a href="#cb8-66" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for aggregate 7060 from IBGE API...</span></span>
+<span id="cb8-67"><a href="#cb8-67" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for aggregate 7060 from IBGE API... [74ms]</span></span>
+<span id="cb8-68"><a href="#cb8-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-69"><a href="#cb8-69" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 7060: 4 variables,</span></span>
+<span id="cb8-70"><a href="#cb8-70" tabindex="-1"></a><span class="co">#&gt; 1 classification, 457 categories.</span></span>
+<span id="cb8-71"><a href="#cb8-71" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 7060 from IBGE API...</span></span>
+<span id="cb8-72"><a href="#cb8-72" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 7060 from IBGE API... [123ms]</span></span>
+<span id="cb8-73"><a href="#cb8-73" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-74"><a href="#cb8-74" tabindex="-1"></a><span class="co">#&gt; ✔ 3 records retrieved.</span></span>
+<span id="cb8-75"><a href="#cb8-75" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 9</span></span>
+<span id="cb8-76"><a href="#cb8-76" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name         variable_unit classification_315 locality_id</span></span>
+<span id="cb8-77"><a href="#cb8-77" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;      </span></span>
+<span id="cb8-78"><a href="#cb8-78" tabindex="-1"></a><span class="co">#&gt; 1 63          IPCA - Variação mens… %             Índice geral       3501       </span></span>
+<span id="cb8-79"><a href="#cb8-79" tabindex="-1"></a><span class="co">#&gt; 2 63          IPCA - Variação mens… %             Índice geral       3301       </span></span>
+<span id="cb8-80"><a href="#cb8-80" tabindex="-1"></a><span class="co">#&gt; 3 63          IPCA - Variação mens… %             Índice geral       5208707    </span></span>
+<span id="cb8-81"><a href="#cb8-81" tabindex="-1"></a><span class="co">#&gt; # ℹ 4 more variables: locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb8-82"><a href="#cb8-82" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span></code></pre></div>
 <p>The geographic level codes follow the IBGE convention:</p>
 <table>
 <colgroup>
@@ -509,8 +758,9 @@ formats:</p>
 </table>
 <blockquote>
 <p><strong>Tip</strong>: Not every aggregate is available at every
-level. Aggregate 1705 has data for N1, N2, and N3 but not N6. Use
-<code>ibge_metadata()</code> to check.</p>
+level. Aggregate 1092 has data for N1 and N3 but not N6. Use
+<code>ibge_metadata()</code> to check, or rely on the validation
+described below.</p>
 </blockquote>
 </div>
 <div id="specifying-periods" class="section level2">
@@ -518,60 +768,221 @@ level. Aggregate 1705 has data for N1, N2, and N3 but not N6. Use
 <p>Periods follow the API convention — negative values mean “last
 N”:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Last 6 periods (the default)</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">6</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co"># Last 12 periods</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">12</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># Specific period codes</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">8884</span>, <span class="at">periods =</span> <span class="fu">c</span>(<span class="dv">202301</span>, <span class="dv">202302</span>, <span class="dv">202303</span>), <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># Range (inclusive)</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">8884</span>, <span class="at">periods =</span> <span class="st">&quot;202101-202304&quot;</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co"># Range + extra period</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">8884</span>, <span class="at">periods =</span> <span class="st">&quot;202101-202106|202301&quot;</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span></code></pre></div>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">6</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [70ms]</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; ✔ 6 records retrieved.</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 11</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name variable_unit classification_18 classification_12529</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;             &lt;chr&gt;               </span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; 1 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; 2 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt; 3 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; 4 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; 5 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt; 6 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt; # ℹ 6 more variables: classification_12716 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co"># Last 12 periods</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">12</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [80ms]</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; ✔ 12 records retrieved.</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; # A tibble: 12 × 11</span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="co">#&gt;    variable_id variable_name    variable_unit classification_18</span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;            &lt;chr&gt;         &lt;chr&gt;            </span></span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;  1 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt;  2 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt;  3 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt;  4 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;  5 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt;  6 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt;  7 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt;  8 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a><span class="co">#&gt;  9 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="co">#&gt; 10 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a><span class="co">#&gt; 11 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a><span class="co">#&gt; 12 284         Animais abatidos Cabeças       Total            </span></span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a><span class="co">#&gt; # ℹ 7 more variables: classification_12529 &lt;chr&gt;, classification_12716 &lt;chr&gt;,</span></span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a><span class="co">#&gt; #   locality_id &lt;chr&gt;, locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a></span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a><span class="co"># Specific period codes (IPCA is monthly: 202301 = January 2023)</span></span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">variable =</span> <span class="dv">63</span>, <span class="at">periods =</span> <span class="fu">c</span>(<span class="dv">202301</span>, <span class="dv">202302</span>, <span class="dv">202303</span>),</span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a>               <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 7060: 4 variables,</span></span>
+<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a><span class="co">#&gt; 1 classification, 457 categories (cached).</span></span>
+<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 7060 from IBGE API...</span></span>
+<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 7060 from IBGE API... [72ms]</span></span>
+<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a><span class="co">#&gt; ✔ 3 records retrieved.</span></span>
+<span id="cb9-57"><a href="#cb9-57" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 9</span></span>
+<span id="cb9-58"><a href="#cb9-58" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name         variable_unit classification_315 locality_id</span></span>
+<span id="cb9-59"><a href="#cb9-59" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;      </span></span>
+<span id="cb9-60"><a href="#cb9-60" tabindex="-1"></a><span class="co">#&gt; 1 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-61"><a href="#cb9-61" tabindex="-1"></a><span class="co">#&gt; 2 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-62"><a href="#cb9-62" tabindex="-1"></a><span class="co">#&gt; 3 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-63"><a href="#cb9-63" tabindex="-1"></a><span class="co">#&gt; # ℹ 4 more variables: locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb9-64"><a href="#cb9-64" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span>
+<span id="cb9-65"><a href="#cb9-65" tabindex="-1"></a></span>
+<span id="cb9-66"><a href="#cb9-66" tabindex="-1"></a><span class="co"># Range (inclusive)</span></span>
+<span id="cb9-67"><a href="#cb9-67" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">variable =</span> <span class="dv">63</span>, <span class="at">periods =</span> <span class="st">&quot;202101-202104&quot;</span>,</span>
+<span id="cb9-68"><a href="#cb9-68" tabindex="-1"></a>               <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb9-69"><a href="#cb9-69" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 7060: 4 variables,</span></span>
+<span id="cb9-70"><a href="#cb9-70" tabindex="-1"></a><span class="co">#&gt; 1 classification, 457 categories (cached).</span></span>
+<span id="cb9-71"><a href="#cb9-71" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 7060 from IBGE API...</span></span>
+<span id="cb9-72"><a href="#cb9-72" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 7060 from IBGE API... [159ms]</span></span>
+<span id="cb9-73"><a href="#cb9-73" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-74"><a href="#cb9-74" tabindex="-1"></a><span class="co">#&gt; ✔ 4 records retrieved.</span></span>
+<span id="cb9-75"><a href="#cb9-75" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 9</span></span>
+<span id="cb9-76"><a href="#cb9-76" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name         variable_unit classification_315 locality_id</span></span>
+<span id="cb9-77"><a href="#cb9-77" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;      </span></span>
+<span id="cb9-78"><a href="#cb9-78" tabindex="-1"></a><span class="co">#&gt; 1 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-79"><a href="#cb9-79" tabindex="-1"></a><span class="co">#&gt; 2 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-80"><a href="#cb9-80" tabindex="-1"></a><span class="co">#&gt; 3 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-81"><a href="#cb9-81" tabindex="-1"></a><span class="co">#&gt; 4 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-82"><a href="#cb9-82" tabindex="-1"></a><span class="co">#&gt; # ℹ 4 more variables: locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb9-83"><a href="#cb9-83" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span>
+<span id="cb9-84"><a href="#cb9-84" tabindex="-1"></a></span>
+<span id="cb9-85"><a href="#cb9-85" tabindex="-1"></a><span class="co"># Range + extra period</span></span>
+<span id="cb9-86"><a href="#cb9-86" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">variable =</span> <span class="dv">63</span>, <span class="at">periods =</span> <span class="st">&quot;202101-202103|202301&quot;</span>,</span>
+<span id="cb9-87"><a href="#cb9-87" tabindex="-1"></a>               <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb9-88"><a href="#cb9-88" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 7060: 4 variables,</span></span>
+<span id="cb9-89"><a href="#cb9-89" tabindex="-1"></a><span class="co">#&gt; 1 classification, 457 categories (cached).</span></span>
+<span id="cb9-90"><a href="#cb9-90" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 7060 from IBGE API...</span></span>
+<span id="cb9-91"><a href="#cb9-91" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 7060 from IBGE API... [76ms]</span></span>
+<span id="cb9-92"><a href="#cb9-92" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-93"><a href="#cb9-93" tabindex="-1"></a><span class="co">#&gt; ✔ 4 records retrieved.</span></span>
+<span id="cb9-94"><a href="#cb9-94" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 9</span></span>
+<span id="cb9-95"><a href="#cb9-95" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name         variable_unit classification_315 locality_id</span></span>
+<span id="cb9-96"><a href="#cb9-96" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;      </span></span>
+<span id="cb9-97"><a href="#cb9-97" tabindex="-1"></a><span class="co">#&gt; 1 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-98"><a href="#cb9-98" tabindex="-1"></a><span class="co">#&gt; 2 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-99"><a href="#cb9-99" tabindex="-1"></a><span class="co">#&gt; 3 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-100"><a href="#cb9-100" tabindex="-1"></a><span class="co">#&gt; 4 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb9-101"><a href="#cb9-101" tabindex="-1"></a><span class="co">#&gt; # ℹ 4 more variables: locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb9-102"><a href="#cb9-102" tabindex="-1"></a><span class="co">#&gt; #   value &lt;chr&gt;</span></span></code></pre></div>
 <blockquote>
 <p><strong>Note</strong>: Negative values cannot be mixed with specific
 periods. Period codes encode both the date and the periodicity —
-<code>202001</code> could mean January 2020 (monthly), Q1 2020
-(quarterly), or S1 2020 (semi-annual), depending on the aggregate.</p>
+<code>202001</code> means January 2020 in a monthly aggregate but the
+first quarter of 2020 in a quarterly one. <code>ibge_metadata()</code>
+reports the periodicity, and <code>ibge_periods()</code> lists the valid
+codes.</p>
 </blockquote>
 </div>
 <div id="filtering-with-classifications" class="section level2">
 <h2>Filtering with classifications</h2>
 <p>Many aggregates break their data further by classifications
-(dimensions). For instance, aggregate 1712 (crop production) has a
-classification for the type of product (226) and another for the
-producer condition (218).</p>
+(dimensions). For instance, aggregate 1712 (temporary crops in the 2006
+Agricultural Census) has a classification for the product (226) and
+another for the producer’s condition (218).</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Single category: pineapple (4844) from product classification (226)</span></span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="dv">4844</span>)</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>)</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co"># Multiple categories</span></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">4844</span>, <span class="dv">96608</span>, <span class="dv">96609</span>))</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>)</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co"># Multiple classifications</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">4844</span>, <span class="dv">96608</span>), <span class="st">&quot;218&quot;</span> <span class="ot">=</span> <span class="dv">4780</span>)</span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>)</span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co"># All categories of a classification (can be large!)</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a>  <span class="at">periods        =</span> <span class="sc">-</span><span class="dv">1</span>,</span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="st">&quot;all&quot;</span>)</span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">variable       =</span> <span class="dv">214</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="dv">4844</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for aggregate 1712 from IBGE API...</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for aggregate 1712 from IBGE API... [71ms]</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1712: 7 variables,</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; 6 classifications, 108 categories.</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1712 from IBGE API...</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1712 from IBGE API... [73ms]</span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt; ✔ 1 record retrieved.</span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 14</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name  variable_unit classification_226 classification_218</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;          &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;             </span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; 1 214         Quantidade pr… Mil frutos    Abacaxi            Total             </span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt; # ℹ 9 more variables: classification_220 &lt;chr&gt;, classification_12517 &lt;chr&gt;,</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; #   classification_12523 &lt;chr&gt;, classification_12617 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a></span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co"># Multiple categories</span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a>  <span class="at">variable       =</span> <span class="dv">214</span>,</span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">4844</span>, <span class="dv">96608</span>, <span class="dv">96609</span>))</span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a>)</span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1712: 7 variables,</span></span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; 6 classifications, 108 categories (cached).</span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1712 from IBGE API...</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1712 from IBGE API... [76ms]</span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="co">#&gt; ✔ 3 records retrieved.</span></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 14</span></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name  variable_unit classification_226 classification_218</span></span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;          &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;             </span></span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; 1 214         Quantidade pr… Mil frutos    Abacaxi            Total             </span></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt; 2 214         Quantidade pr… Mil frutos    Amendoim em casca  Total             </span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt; 3 214         Quantidade pr… Mil frutos    Batata-inglesa     Total             </span></span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt; # ℹ 9 more variables: classification_220 &lt;chr&gt;, classification_12517 &lt;chr&gt;,</span></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; #   classification_12523 &lt;chr&gt;, classification_12617 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a></span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co"># Multiple classifications</span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a>  <span class="at">variable       =</span> <span class="dv">214</span>,</span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="dv">4844</span>, <span class="dv">96608</span>), <span class="st">&quot;218&quot;</span> <span class="ot">=</span> <span class="dv">4780</span>)</span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a>)</span>
+<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1712: 7 variables,</span></span>
+<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt; 6 classifications, 108 categories (cached).</span></span>
+<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1712 from IBGE API...</span></span>
+<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1712 from IBGE API... [108ms]</span></span>
+<span id="cb10-59"><a href="#cb10-59" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-60"><a href="#cb10-60" tabindex="-1"></a><span class="co">#&gt; ✔ 2 records retrieved.</span></span>
+<span id="cb10-61"><a href="#cb10-61" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 14</span></span>
+<span id="cb10-62"><a href="#cb10-62" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name  variable_unit classification_226 classification_218</span></span>
+<span id="cb10-63"><a href="#cb10-63" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;          &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;             </span></span>
+<span id="cb10-64"><a href="#cb10-64" tabindex="-1"></a><span class="co">#&gt; 1 214         Quantidade pr… Mil frutos    Abacaxi            Proprietário      </span></span>
+<span id="cb10-65"><a href="#cb10-65" tabindex="-1"></a><span class="co">#&gt; 2 214         Quantidade pr… Mil frutos    Amendoim em casca  Proprietário      </span></span>
+<span id="cb10-66"><a href="#cb10-66" tabindex="-1"></a><span class="co">#&gt; # ℹ 9 more variables: classification_220 &lt;chr&gt;, classification_12517 &lt;chr&gt;,</span></span>
+<span id="cb10-67"><a href="#cb10-67" tabindex="-1"></a><span class="co">#&gt; #   classification_12523 &lt;chr&gt;, classification_12617 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb10-68"><a href="#cb10-68" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span>
+<span id="cb10-69"><a href="#cb10-69" tabindex="-1"></a></span>
+<span id="cb10-70"><a href="#cb10-70" tabindex="-1"></a><span class="co"># All categories of a classification</span></span>
+<span id="cb10-71"><a href="#cb10-71" tabindex="-1"></a><span class="fu">ibge_variables</span>(</span>
+<span id="cb10-72"><a href="#cb10-72" tabindex="-1"></a>  <span class="at">aggregate      =</span> <span class="dv">1712</span>,</span>
+<span id="cb10-73"><a href="#cb10-73" tabindex="-1"></a>  <span class="at">variable       =</span> <span class="dv">214</span>,</span>
+<span id="cb10-74"><a href="#cb10-74" tabindex="-1"></a>  <span class="at">localities     =</span> <span class="st">&quot;BR&quot;</span>,</span>
+<span id="cb10-75"><a href="#cb10-75" tabindex="-1"></a>  <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;226&quot;</span> <span class="ot">=</span> <span class="st">&quot;all&quot;</span>)</span>
+<span id="cb10-76"><a href="#cb10-76" tabindex="-1"></a>)</span>
+<span id="cb10-77"><a href="#cb10-77" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1712: 7 variables,</span></span>
+<span id="cb10-78"><a href="#cb10-78" tabindex="-1"></a><span class="co">#&gt; 6 classifications, 108 categories (cached).</span></span>
+<span id="cb10-79"><a href="#cb10-79" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1712 from IBGE API...</span></span>
+<span id="cb10-80"><a href="#cb10-80" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1712 from IBGE API... [77ms]</span></span>
+<span id="cb10-81"><a href="#cb10-81" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-82"><a href="#cb10-82" tabindex="-1"></a><span class="co">#&gt; ✔ 53 records retrieved.</span></span>
+<span id="cb10-83"><a href="#cb10-83" tabindex="-1"></a><span class="co">#&gt; # A tibble: 53 × 14</span></span>
+<span id="cb10-84"><a href="#cb10-84" tabindex="-1"></a><span class="co">#&gt;    variable_id variable_name variable_unit classification_226 classification_218</span></span>
+<span id="cb10-85"><a href="#cb10-85" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;             </span></span>
+<span id="cb10-86"><a href="#cb10-86" tabindex="-1"></a><span class="co">#&gt;  1 214         Quantidade p… Unidades      Total              Total             </span></span>
+<span id="cb10-87"><a href="#cb10-87" tabindex="-1"></a><span class="co">#&gt;  2 214         Quantidade p… Unidades      Abacaxi            Total             </span></span>
+<span id="cb10-88"><a href="#cb10-88" tabindex="-1"></a><span class="co">#&gt;  3 214         Quantidade p… Unidades      Abóbora, moranga,… Total             </span></span>
+<span id="cb10-89"><a href="#cb10-89" tabindex="-1"></a><span class="co">#&gt;  4 214         Quantidade p… Unidades      Algodão herbáceo   Total             </span></span>
+<span id="cb10-90"><a href="#cb10-90" tabindex="-1"></a><span class="co">#&gt;  5 214         Quantidade p… Unidades      Alho               Total             </span></span>
+<span id="cb10-91"><a href="#cb10-91" tabindex="-1"></a><span class="co">#&gt;  6 214         Quantidade p… Unidades      Amendoim em casca  Total             </span></span>
+<span id="cb10-92"><a href="#cb10-92" tabindex="-1"></a><span class="co">#&gt;  7 214         Quantidade p… Unidades      Arroz em casca     Total             </span></span>
+<span id="cb10-93"><a href="#cb10-93" tabindex="-1"></a><span class="co">#&gt;  8 214         Quantidade p… Unidades      Aveia branca em g… Total             </span></span>
+<span id="cb10-94"><a href="#cb10-94" tabindex="-1"></a><span class="co">#&gt;  9 214         Quantidade p… Unidades      Batata-inglesa     Total             </span></span>
+<span id="cb10-95"><a href="#cb10-95" tabindex="-1"></a><span class="co">#&gt; 10 214         Quantidade p… Unidades      Cana-de-açúcar     Total             </span></span>
+<span id="cb10-96"><a href="#cb10-96" tabindex="-1"></a><span class="co">#&gt; # ℹ 43 more rows</span></span>
+<span id="cb10-97"><a href="#cb10-97" tabindex="-1"></a><span class="co">#&gt; # ℹ 9 more variables: classification_220 &lt;chr&gt;, classification_12517 &lt;chr&gt;,</span></span>
+<span id="cb10-98"><a href="#cb10-98" tabindex="-1"></a><span class="co">#&gt; #   classification_12523 &lt;chr&gt;, classification_12617 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb10-99"><a href="#cb10-99" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span></code></pre></div>
 <p>When no classification is specified, the API returns the
 <strong>Total</strong> category (ID = 0) — an aggregate across all
 categories.</p>
@@ -582,30 +993,120 @@ categories.</p>
 <code>ibge_localities()</code> validate your parameters against the
 aggregate’s metadata. If something doesn’t match, you get a clear error
 with the allowed values:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># N3 (states) is not available for aggregate 1705</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">localities =</span> <span class="st">&quot;N3&quot;</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt; ! Geographic level(s) &quot;N3&quot; not available for aggregate 1705.</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; ℹ Available levels: &quot;N1&quot;, &quot;N6&quot;, and &quot;N7&quot;.</span></span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co"># Period out of range</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">periods =</span> <span class="dv">199901</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; ! Period(s) &quot;199901&quot; out of range for aggregate 1705.</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; ℹ Valid range: &quot;201202&quot; to &quot;202001&quot; (monthly).</span></span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># Non-existent variable</span></span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">variable =</span> <span class="dv">999</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; 355 - IPCA15 - Variação mensal (%)</span></span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#&gt; 356 - IPCA15 - Variação acumulada no ano (%)</span></span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co">#&gt; 1120 - IPCA15 - Variação acumulada em 12 meses (%)</span></span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; 357 - IPCA15 - Peso mensal (%)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># N6 (municipalities) is not available for aggregate 1092</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">localities =</span> <span class="st">&quot;N6&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; ! Geographic level(s) &quot;N6&quot; not available for aggregate 1092.</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt; ℹ Available levels: &quot;N1&quot; and &quot;N3&quot;.</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co"># Period out of range</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">periods =</span> <span class="dv">199001</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co">#&gt; ! Period(s) 199001 out of range for aggregate 1092.</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#&gt; ℹ Valid range: 199701 to 202602 (trimestral).</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co"># Non-existent variable</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">999</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>)</span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="co">#&gt; ! Variable(s) &quot;999&quot; not found in aggregate 1092.</span></span>
+<span id="cb11-23"><a href="#cb11-23" tabindex="-1"></a><span class="co">#&gt; ℹ Available variables:</span></span>
+<span id="cb11-24"><a href="#cb11-24" tabindex="-1"></a><span class="co">#&gt; 151 - Número de informantes (Unidades)</span></span>
+<span id="cb11-25"><a href="#cb11-25" tabindex="-1"></a><span class="co">#&gt; 1000151 - Número de informantes - percentual do total geral (%)</span></span>
+<span id="cb11-26"><a href="#cb11-26" tabindex="-1"></a><span class="co">#&gt; 284 - Animais abatidos (Cabeças)</span></span>
+<span id="cb11-27"><a href="#cb11-27" tabindex="-1"></a><span class="co">#&gt; 1000284 - Animais abatidos - percentual do total geral (%)</span></span>
+<span id="cb11-28"><a href="#cb11-28" tabindex="-1"></a><span class="co">#&gt; 285 - Peso total das carcaças (Quilogramas)</span></span>
+<span id="cb11-29"><a href="#cb11-29" tabindex="-1"></a><span class="co">#&gt; 1000285 - Peso total das carcaças - percentual do total geral (%)</span></span>
+<span id="cb11-30"><a href="#cb11-30" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" tabindex="-1"></a><span class="co"># Non-existent category</span></span>
+<span id="cb11-32"><a href="#cb11-32" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>, <span class="at">classification =</span> <span class="fu">list</span>(<span class="st">&quot;18&quot;</span> <span class="ot">=</span> <span class="dv">1</span>))</span>
+<span id="cb11-33"><a href="#cb11-33" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 1092: 6 variables,</span></span>
+<span id="cb11-34"><a href="#cb11-34" tabindex="-1"></a><span class="co">#&gt; 3 classifications, 14 categories (cached).</span></span>
+<span id="cb11-35"><a href="#cb11-35" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb11-36"><a href="#cb11-36" tabindex="-1"></a><span class="co">#&gt; ! Category(ies) &quot;1&quot; not found in classification &quot;18&quot; (Tipo de rebanho</span></span>
+<span id="cb11-37"><a href="#cb11-37" tabindex="-1"></a><span class="co">#&gt;   bovino).</span></span>
+<span id="cb11-38"><a href="#cb11-38" tabindex="-1"></a><span class="co">#&gt; ℹ First categories available (6 total):</span></span>
+<span id="cb11-39"><a href="#cb11-39" tabindex="-1"></a><span class="co">#&gt; 992 - Total</span></span>
+<span id="cb11-40"><a href="#cb11-40" tabindex="-1"></a><span class="co">#&gt; 55 - Bois</span></span>
+<span id="cb11-41"><a href="#cb11-41" tabindex="-1"></a><span class="co">#&gt; 56 - Vacas</span></span>
+<span id="cb11-42"><a href="#cb11-42" tabindex="-1"></a><span class="co">#&gt; 111734 - Novilhos</span></span>
+<span id="cb11-43"><a href="#cb11-43" tabindex="-1"></a><span class="co">#&gt; 111735 - Novilhas</span></span>
+<span id="cb11-44"><a href="#cb11-44" tabindex="-1"></a><span class="co">#&gt; 57 - Vitelos e vitelas</span></span></code></pre></div>
 <p>Metadata is fetched once per session and cached. To force a
 refresh:</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">ibge_clear_cache</span>()</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">ibge_clear_cache</span>()</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co">#&gt; ✔ Metadata cache cleared.</span></span></code></pre></div>
 <p>Skip validation entirely with <code>validate = FALSE</code>:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1705</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>, <span class="at">validate =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">1092</span>, <span class="at">variable =</span> <span class="dv">284</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>,</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>               <span class="at">validate =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 1092 from IBGE API...</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 1092 from IBGE API... [75ms]</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; ✔ 1 record retrieved.</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 11</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name variable_unit classification_18 classification_12529</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;         &lt;chr&gt;         &lt;chr&gt;             &lt;chr&gt;               </span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; 1 284         Animais abat… Cabeças       Total             Total               </span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co">#&gt; # ℹ 6 more variables: classification_12716 &lt;chr&gt;, locality_id &lt;chr&gt;,</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co">#&gt; #   locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span></code></pre></div>
+</div>
+<div id="large-queries" class="section level2">
+<h2>Large queries</h2>
+<p>The API rejects requests whose result is too large (see
+<code>?ibge_variables</code> and the API-concepts vignette). You do not
+need to split such queries by hand: <code>ibge_variables()</code>
+estimates the result size from the metadata and, when it exceeds the
+limit, splits the request into several smaller ones and combines the
+results. The query below asks for the estimated population of every
+municipality (aggregate 6579, about 5,570 localities) for the last 12
+years — some 67,000 values — and is transparently sent as two
+requests:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>pop <span class="ot">&lt;-</span> <span class="fu">ibge_variables</span>(<span class="dv">6579</span>, <span class="at">localities =</span> <span class="st">&quot;N6&quot;</span>, <span class="at">periods =</span> <span class="sc">-</span><span class="dv">12</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for aggregate 6579 from IBGE API...</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for aggregate 6579 from IBGE API... [70ms]</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 6579: 1 variable,</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; 0 classifications, 0 categories.</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching N6 localities for aggregate 6579 from IBGE API...</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching N6 localities for aggregate 6579 from IBGE API... [166ms]</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching period list for aggregate 6579 from IBGE API...</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching period list for aggregate 6579 from IBGE API... [71ms]</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt; ℹ Estimated result exceeds the API limit (50000 values);</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; splitting into 2 requests.</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching chunk 1/2 for aggregate 6579 from IBGE API...</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching chunk 1/2 for aggregate 6579 from IBGE API... [186ms]</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching chunk 2/2 for aggregate 6579 from IBGE API...</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching chunk 2/2 for aggregate 6579 from IBGE API... [375ms]</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co">#&gt; ✔ 66852 records retrieved.</span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a>pop</span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; # A tibble: 66,852 × 8</span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt;    variable_id variable_name             variable_unit locality_id locality_name</span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;       &lt;chr&gt;                     &lt;chr&gt;         &lt;chr&gt;       &lt;chr&gt;        </span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt;  1 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt;  2 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt;  3 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt;  4 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt;  5 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt;  6 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt;  7 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#&gt;  8 9324        População residente esti… Pessoas       1100015     Alta Florest…</span></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co">#&gt;  9 9324        População residente esti… Pessoas       1100023     Ariquemes - …</span></span>
+<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a><span class="co">#&gt; 10 9324        População residente esti… Pessoas       1100023     Ariquemes - …</span></span>
+<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a><span class="co">#&gt; # ℹ 66,842 more rows</span></span>
+<span id="cb14-37"><a href="#cb14-37" tabindex="-1"></a><span class="co">#&gt; # ℹ 3 more variables: locality_level &lt;chr&gt;, period &lt;chr&gt;, value &lt;chr&gt;</span></span></code></pre></div>
+<p>Municipality-level requests are slow on the server side (one to
+several minutes each), so expect this to take a while. Use
+<code>chunk = FALSE</code> to force a single request, or pass a number
+to change the per-request limit.</p>
 </div>
 <div id="browsing-the-survey-catalog" class="section level2">
 <h2>Browsing the survey catalog</h2>
@@ -616,92 +1117,231 @@ frequency, and thematic classifications.</p>
 <p>This is useful when you want to understand <strong>what surveys
 exist</strong> and <strong>how they are structured</strong> before
 diving into specific aggregates.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># List all 98 IBGE surveys</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">ibge_surveys</span>()</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 98 × 8</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt;   id    name                                 status category    ...</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt; &lt;chr&gt;                                &lt;chr&gt;  &lt;chr&gt;</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; 1 AC    Pesquisa Anual da Indústria da Cons… Ativa  Estrutural</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; 2 AA    Pesquisa Nacional de Saúde do Escol… Ativa  Especial</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; ...</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co"># Filter active monthly surveys</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="fu">ibge_surveys</span>(<span class="at">thematic_classifications =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>  <span class="fu">filter</span>(status <span class="sc">==</span> <span class="st">&quot;Ativa&quot;</span>, category <span class="sc">==</span> <span class="st">&quot;Conjuntural&quot;</span>)</span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co"># Check which periods have metadata for the Censo Demográfico</span></span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="fu">ibge_survey_periods</span>(<span class="st">&quot;CD&quot;</span>)</span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; # A tibble: 9 × 3</span></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt;    year month order</span></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt; 1  2022    NA     0</span></span>
-<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co">#&gt; 2  2010    NA     0</span></span>
-<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt; ...</span></span>
-<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co"># Get full institutional metadata for a specific period</span></span>
-<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">ibge_survey_metadata</span>(<span class="st">&quot;CD&quot;</span>, <span class="at">year =</span> <span class="dv">2022</span>)</span>
-<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a>meta</span>
-<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt; ── CD ──</span></span>
-<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt; Status: Ativa</span></span>
-<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; Category: Estrutural</span></span>
-<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; ...</span></span>
-<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt; ── Metadata occurrences (1) ──</span></span>
-<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; Use `meta$occurrences` to explore the full metadata.</span></span>
-<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a></span>
-<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co"># Explore methodology fields</span></span>
-<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a><span class="fu">names</span>(meta<span class="sc">$</span>occurrences[[<span class="dv">1</span>]])</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># List all IBGE surveys</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">ibge_surveys</span>()</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching survey catalog from IBGE Metadata API...</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching survey catalog from IBGE Metadata API... [83ms]</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; ✔ 100 surveys found.</span></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt; # A tibble: 100 × 8</span></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt;    id    name                       name_en status category collection_frequency</span></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt; &lt;chr&gt;                      &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;               </span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt;  1 AC    &quot;Pesquisa Anual da Indúst… &lt;NA&gt;    Ativa  Estrutu… Anual               </span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt;  2 AA    &quot;Pesquisa Nacional de Saú… &lt;NA&gt;    Ativa  Especial Eventual            </span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt;  3 AM    &quot;Pesquisa de Assistência … &lt;NA&gt;    Desat… Especial Eventual            </span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt;  4 AX    &quot;Pesquisa Trimestral do A… Quarte… Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt;  5 CD    &quot;Censo Demográfico&quot;        Popula… Ativa  Estrutu… Decenal             </span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt;  6 CL    &quot;Cadastro Central de Empr… Busine… Ativa  Estrutu… Anual               </span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt;  7 EI    &quot;Economia Informal Urbana&quot; Urban … Concl… Outro    Eventual            </span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt;  8 ER    &quot;Pesquisa das Característ… Ethno-… Desat… Especial Eventual            </span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co">#&gt;  9 FP    &quot;Fundações Privadas e Ass… &lt;NA&gt;    Ativa  Outro    Eventual            </span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co">#&gt; 10 IA    &quot;Índice Nacional de Preço… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co">#&gt; # ℹ 90 more rows</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: publication_frequency &lt;chr&gt;,</span></span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co">#&gt; #   thematic_classifications &lt;list&gt;</span></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co"># Filter active short-term (&quot;conjuntural&quot;) surveys</span></span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a><span class="co">#&gt; Anexando pacote: &#39;dplyr&#39;</span></span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt; Os seguintes objetos são mascarados por &#39;package:stats&#39;:</span></span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="co">#&gt;     filter, lag</span></span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a><span class="co">#&gt; Os seguintes objetos são mascarados por &#39;package:base&#39;:</span></span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span>
+<span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a><span class="fu">ibge_surveys</span>(<span class="at">thematic_classifications =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb15-35"><a href="#cb15-35" tabindex="-1"></a>  <span class="fu">filter</span>(status <span class="sc">==</span> <span class="st">&quot;Ativa&quot;</span>, category <span class="sc">==</span> <span class="st">&quot;Conjuntural&quot;</span>)</span>
+<span id="cb15-36"><a href="#cb15-36" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching survey catalog from IBGE Metadata API...</span></span>
+<span id="cb15-37"><a href="#cb15-37" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching survey catalog from IBGE Metadata API... [154ms]</span></span>
+<span id="cb15-38"><a href="#cb15-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-39"><a href="#cb15-39" tabindex="-1"></a><span class="co">#&gt; ✔ 100 surveys found.</span></span>
+<span id="cb15-40"><a href="#cb15-40" tabindex="-1"></a><span class="co">#&gt; # A tibble: 17 × 7</span></span>
+<span id="cb15-41"><a href="#cb15-41" tabindex="-1"></a><span class="co">#&gt;    id    name                       name_en status category collection_frequency</span></span>
+<span id="cb15-42"><a href="#cb15-42" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt; &lt;chr&gt;                      &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt;               </span></span>
+<span id="cb15-43"><a href="#cb15-43" tabindex="-1"></a><span class="co">#&gt;  1 AX    Pesquisa Trimestral do Ab… Quarte… Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-44"><a href="#cb15-44" tabindex="-1"></a><span class="co">#&gt;  2 IA    Índice Nacional de Preços… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-45"><a href="#cb15-45" tabindex="-1"></a><span class="co">#&gt;  3 ST    Contas Nacionais Trimestr… &lt;NA&gt;    Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-46"><a href="#cb15-46" tabindex="-1"></a><span class="co">#&gt;  4 IR    Índice de Preços ao Produ… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-47"><a href="#cb15-47" tabindex="-1"></a><span class="co">#&gt;  5 LT    Pesquisa Trimestral do Le… Quarte… Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-48"><a href="#cb15-48" tabindex="-1"></a><span class="co">#&gt;  6 MC    Pesquisa Mensal de Comérc… Monthl… Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-49"><a href="#cb15-49" tabindex="-1"></a><span class="co">#&gt;  7 PC    Índice Nacional de Preços… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-50"><a href="#cb15-50" tabindex="-1"></a><span class="co">#&gt;  8 PO    Produção de Ovos de Galin… Quarte… Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-51"><a href="#cb15-51" tabindex="-1"></a><span class="co">#&gt;  9 SC    Pesquisa Mensal de Serviç… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-52"><a href="#cb15-52" tabindex="-1"></a><span class="co">#&gt; 10 DD    Pesquisa Nacional por Amo… &lt;NA&gt;    Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-53"><a href="#cb15-53" tabindex="-1"></a><span class="co">#&gt; 11 ES    Pesquisa de Estoques       Survey… Ativa  Conjunt… Semestral           </span></span>
+<span id="cb15-54"><a href="#cb15-54" tabindex="-1"></a><span class="co">#&gt; 12 BB    Pesquisa Nacional por Amo… &lt;NA&gt;    Ativa  Conjunt… Mensal (Trimestre M…</span></span>
+<span id="cb15-55"><a href="#cb15-55" tabindex="-1"></a><span class="co">#&gt; 13 SI    Sistema Nacional de Pesqu… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-56"><a href="#cb15-56" tabindex="-1"></a><span class="co">#&gt; 14 CQ    Pesquisa Trimestral do Co… Quarte… Ativa  Conjunt… Trimestral          </span></span>
+<span id="cb15-57"><a href="#cb15-57" tabindex="-1"></a><span class="co">#&gt; 15 IQ    Índice Nacional de Preços… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-58"><a href="#cb15-58" tabindex="-1"></a><span class="co">#&gt; 16 PZ    Pesquisa Industrial Mensa… &lt;NA&gt;    Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-59"><a href="#cb15-59" tabindex="-1"></a><span class="co">#&gt; 17 LA    Levantamento Sistemático … System… Ativa  Conjunt… Mensal              </span></span>
+<span id="cb15-60"><a href="#cb15-60" tabindex="-1"></a><span class="co">#&gt; # ℹ 1 more variable: publication_frequency &lt;chr&gt;</span></span>
+<span id="cb15-61"><a href="#cb15-61" tabindex="-1"></a></span>
+<span id="cb15-62"><a href="#cb15-62" tabindex="-1"></a><span class="co"># Check which periods have metadata for the Censo Demográfico</span></span>
+<span id="cb15-63"><a href="#cb15-63" tabindex="-1"></a><span class="fu">ibge_survey_periods</span>(<span class="st">&quot;CD&quot;</span>)</span>
+<span id="cb15-64"><a href="#cb15-64" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching survey catalog from IBGE Metadata API...</span></span>
+<span id="cb15-65"><a href="#cb15-65" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching survey catalog from IBGE Metadata API... [79ms]</span></span>
+<span id="cb15-66"><a href="#cb15-66" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-67"><a href="#cb15-67" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching periods for survey CD from IBGE Metadata API...</span></span>
+<span id="cb15-68"><a href="#cb15-68" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching periods for survey CD from IBGE Metadata API... [69ms]</span></span>
+<span id="cb15-69"><a href="#cb15-69" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-70"><a href="#cb15-70" tabindex="-1"></a><span class="co">#&gt; ✔ 2 periods found for survey &quot;CD&quot;.</span></span>
+<span id="cb15-71"><a href="#cb15-71" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 3</span></span>
+<span id="cb15-72"><a href="#cb15-72" tabindex="-1"></a><span class="co">#&gt;    year month order</span></span>
+<span id="cb15-73"><a href="#cb15-73" tabindex="-1"></a><span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></span>
+<span id="cb15-74"><a href="#cb15-74" tabindex="-1"></a><span class="co">#&gt; 1  2010    NA    NA</span></span>
+<span id="cb15-75"><a href="#cb15-75" tabindex="-1"></a><span class="co">#&gt; 2  2022    NA    NA</span></span>
+<span id="cb15-76"><a href="#cb15-76" tabindex="-1"></a></span>
+<span id="cb15-77"><a href="#cb15-77" tabindex="-1"></a><span class="co"># Get full institutional metadata for a specific period</span></span>
+<span id="cb15-78"><a href="#cb15-78" tabindex="-1"></a>meta_cd <span class="ot">&lt;-</span> <span class="fu">ibge_survey_metadata</span>(<span class="st">&quot;CD&quot;</span>, <span class="at">year =</span> <span class="dv">2022</span>)</span>
+<span id="cb15-79"><a href="#cb15-79" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for CD (2022) from IBGE Metadata API...</span></span>
+<span id="cb15-80"><a href="#cb15-80" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for CD (2022) from IBGE Metadata API... [89ms]</span></span>
+<span id="cb15-81"><a href="#cb15-81" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-82"><a href="#cb15-82" tabindex="-1"></a><span class="co">#&gt; ✔ Survey &quot;CD&quot; (2022): 1 metadata occurrence.</span></span>
+<span id="cb15-83"><a href="#cb15-83" tabindex="-1"></a>meta_cd</span>
+<span id="cb15-84"><a href="#cb15-84" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-85"><a href="#cb15-85" tabindex="-1"></a><span class="co">#&gt; ── CD ──────────────────────────────────────────────────────────────────────────</span></span>
+<span id="cb15-86"><a href="#cb15-86" tabindex="-1"></a><span class="co">#&gt; Status: Ativa</span></span>
+<span id="cb15-87"><a href="#cb15-87" tabindex="-1"></a><span class="co">#&gt; Category: Estrutural</span></span>
+<span id="cb15-88"><a href="#cb15-88" tabindex="-1"></a><span class="co">#&gt; Type: Censo demográfico</span></span>
+<span id="cb15-89"><a href="#cb15-89" tabindex="-1"></a><span class="co">#&gt; Area: Estatísticos</span></span>
+<span id="cb15-90"><a href="#cb15-90" tabindex="-1"></a><span class="co">#&gt; Started: 01/01/1872</span></span>
+<span id="cb15-91"><a href="#cb15-91" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-92"><a href="#cb15-92" tabindex="-1"></a><span class="co">#&gt; ── Thematic classifications (19) ──</span></span>
+<span id="cb15-93"><a href="#cb15-93" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-94"><a href="#cb15-94" tabindex="-1"></a><span class="co">#&gt; ── Metadata occurrences (1) ──</span></span>
+<span id="cb15-95"><a href="#cb15-95" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb15-96"><a href="#cb15-96" tabindex="-1"></a><span class="co">#&gt; Use `meta$occurrences` to explore the full metadata.</span></span>
+<span id="cb15-97"><a href="#cb15-97" tabindex="-1"></a><span class="co">#&gt; Fields: &quot;sigla&quot;, &quot;data_inicio_coleta&quot;, &quot;data_fim_coleta&quot;,</span></span>
+<span id="cb15-98"><a href="#cb15-98" tabindex="-1"></a><span class="co">#&gt; &quot;data_previsao_divulgacao&quot;, &quot;historico&quot;, &quot;historico_ingles&quot;, &quot;objetivo&quot;, and</span></span>
+<span id="cb15-99"><a href="#cb15-99" tabindex="-1"></a><span class="co">#&gt; &quot;objetivo_ingles&quot; ... and 69 more</span></span>
+<span id="cb15-100"><a href="#cb15-100" tabindex="-1"></a></span>
+<span id="cb15-101"><a href="#cb15-101" tabindex="-1"></a><span class="co"># Explore methodology fields</span></span>
+<span id="cb15-102"><a href="#cb15-102" tabindex="-1"></a><span class="fu">names</span>(meta_cd<span class="sc">$</span>occurrences[[<span class="dv">1</span>]])</span>
+<span id="cb15-103"><a href="#cb15-103" tabindex="-1"></a><span class="co">#&gt;  [1] &quot;sigla&quot;                                                        </span></span>
+<span id="cb15-104"><a href="#cb15-104" tabindex="-1"></a><span class="co">#&gt;  [2] &quot;data_inicio_coleta&quot;                                           </span></span>
+<span id="cb15-105"><a href="#cb15-105" tabindex="-1"></a><span class="co">#&gt;  [3] &quot;data_fim_coleta&quot;                                              </span></span>
+<span id="cb15-106"><a href="#cb15-106" tabindex="-1"></a><span class="co">#&gt;  [4] &quot;data_previsao_divulgacao&quot;                                     </span></span>
+<span id="cb15-107"><a href="#cb15-107" tabindex="-1"></a><span class="co">#&gt;  [5] &quot;historico&quot;                                                    </span></span>
+<span id="cb15-108"><a href="#cb15-108" tabindex="-1"></a><span class="co">#&gt;  [6] &quot;historico_ingles&quot;                                             </span></span>
+<span id="cb15-109"><a href="#cb15-109" tabindex="-1"></a><span class="co">#&gt;  [7] &quot;objetivo&quot;                                                     </span></span>
+<span id="cb15-110"><a href="#cb15-110" tabindex="-1"></a><span class="co">#&gt;  [8] &quot;objetivo_ingles&quot;                                              </span></span>
+<span id="cb15-111"><a href="#cb15-111" tabindex="-1"></a><span class="co">#&gt;  [9] &quot;populacao_alvo&quot;                                               </span></span>
+<span id="cb15-112"><a href="#cb15-112" tabindex="-1"></a><span class="co">#&gt; [10] &quot;populacao_alvo_ingles&quot;                                        </span></span>
+<span id="cb15-113"><a href="#cb15-113" tabindex="-1"></a><span class="co">#&gt; [11] &quot;metodologia&quot;                                                  </span></span>
+<span id="cb15-114"><a href="#cb15-114" tabindex="-1"></a><span class="co">#&gt; [12] &quot;metodologia_ingles&quot;                                           </span></span>
+<span id="cb15-115"><a href="#cb15-115" tabindex="-1"></a><span class="co">#&gt; [13] &quot;notas_ocorrencia&quot;                                             </span></span>
+<span id="cb15-116"><a href="#cb15-116" tabindex="-1"></a><span class="co">#&gt; [14] &quot;notas_ocorrencia_ingles&quot;                                      </span></span>
+<span id="cb15-117"><a href="#cb15-117" tabindex="-1"></a><span class="co">#&gt; [15] &quot;ind_divulgacao&quot;                                               </span></span>
+<span id="cb15-118"><a href="#cb15-118" tabindex="-1"></a><span class="co">#&gt; [16] &quot;principais_variaveis&quot;                                         </span></span>
+<span id="cb15-119"><a href="#cb15-119" tabindex="-1"></a><span class="co">#&gt; [17] &quot;principais_variaveis_ingles&quot;                                  </span></span>
+<span id="cb15-120"><a href="#cb15-120" tabindex="-1"></a><span class="co">#&gt; [18] &quot;niveis_divulgacao&quot;                                            </span></span>
+<span id="cb15-121"><a href="#cb15-121" tabindex="-1"></a><span class="co">#&gt; [19] &quot;niveis_divulgacao_ingles&quot;                                     </span></span>
+<span id="cb15-122"><a href="#cb15-122" tabindex="-1"></a><span class="co">#&gt; [20] &quot;nivel_geografico_abrangencia&quot;                                 </span></span>
+<span id="cb15-123"><a href="#cb15-123" tabindex="-1"></a><span class="co">#&gt; [21] &quot;nivel_geografico_abrangencia_ingles&quot;                          </span></span>
+<span id="cb15-124"><a href="#cb15-124" tabindex="-1"></a><span class="co">#&gt; [22] &quot;nivel_geografico_desagregacao&quot;                                </span></span>
+<span id="cb15-125"><a href="#cb15-125" tabindex="-1"></a><span class="co">#&gt; [23] &quot;nivel_geografico_desagregacao_ingles&quot;                         </span></span>
+<span id="cb15-126"><a href="#cb15-126" tabindex="-1"></a><span class="co">#&gt; [24] &quot;instituicoes_responsaveis&quot;                                    </span></span>
+<span id="cb15-127"><a href="#cb15-127" tabindex="-1"></a><span class="co">#&gt; [25] &quot;periodos_referencia&quot;                                          </span></span>
+<span id="cb15-128"><a href="#cb15-128" tabindex="-1"></a><span class="co">#&gt; [26] &quot;tipos_dados&quot;                                                  </span></span>
+<span id="cb15-129"><a href="#cb15-129" tabindex="-1"></a><span class="co">#&gt; [27] &quot;unidades_informante&quot;                                          </span></span>
+<span id="cb15-130"><a href="#cb15-130" tabindex="-1"></a><span class="co">#&gt; [28] &quot;unidades_investigacao&quot;                                        </span></span>
+<span id="cb15-131"><a href="#cb15-131" tabindex="-1"></a><span class="co">#&gt; [29] &quot;unidades_analise&quot;                                             </span></span>
+<span id="cb15-132"><a href="#cb15-132" tabindex="-1"></a><span class="co">#&gt; [30] &quot;tecnicas_coleta&quot;                                              </span></span>
+<span id="cb15-133"><a href="#cb15-133" tabindex="-1"></a><span class="co">#&gt; [31] &quot;formas_disseminacao&quot;                                          </span></span>
+<span id="cb15-134"><a href="#cb15-134" tabindex="-1"></a><span class="co">#&gt; [32] &quot;nivel_desagregacao&quot;                                           </span></span>
+<span id="cb15-135"><a href="#cb15-135" tabindex="-1"></a><span class="co">#&gt; [33] &quot;nivel_desagregacao_ingles&quot;                                    </span></span>
+<span id="cb15-136"><a href="#cb15-136" tabindex="-1"></a><span class="co">#&gt; [34] &quot;instrumentos_coleta&quot;                                          </span></span>
+<span id="cb15-137"><a href="#cb15-137" tabindex="-1"></a><span class="co">#&gt; [35] &quot;palavras_chave&quot;                                               </span></span>
+<span id="cb15-138"><a href="#cb15-138" tabindex="-1"></a><span class="co">#&gt; [36] &quot;palavras_chave_ingles&quot;                                        </span></span>
+<span id="cb15-139"><a href="#cb15-139" tabindex="-1"></a><span class="co">#&gt; [37] &quot;definicao_fatores_expansao&quot;                                   </span></span>
+<span id="cb15-140"><a href="#cb15-140" tabindex="-1"></a><span class="co">#&gt; [38] &quot;definicao_fatores_expansao_ingles&quot;                            </span></span>
+<span id="cb15-141"><a href="#cb15-141" tabindex="-1"></a><span class="co">#&gt; [39] &quot;notas_coleta_dados&quot;                                           </span></span>
+<span id="cb15-142"><a href="#cb15-142" tabindex="-1"></a><span class="co">#&gt; [40] &quot;notas_coleta_dados_ingles&quot;                                    </span></span>
+<span id="cb15-143"><a href="#cb15-143" tabindex="-1"></a><span class="co">#&gt; [41] &quot;supervisao&quot;                                                   </span></span>
+<span id="cb15-144"><a href="#cb15-144" tabindex="-1"></a><span class="co">#&gt; [42] &quot;supervisao_ingles&quot;                                            </span></span>
+<span id="cb15-145"><a href="#cb15-145" tabindex="-1"></a><span class="co">#&gt; [43] &quot;critica_imputacao&quot;                                            </span></span>
+<span id="cb15-146"><a href="#cb15-146" tabindex="-1"></a><span class="co">#&gt; [44] &quot;critica_imputacao_ingles&quot;                                     </span></span>
+<span id="cb15-147"><a href="#cb15-147" tabindex="-1"></a><span class="co">#&gt; [45] &quot;outras_info_processamento&quot;                                    </span></span>
+<span id="cb15-148"><a href="#cb15-148" tabindex="-1"></a><span class="co">#&gt; [46] &quot;outras_info_processamento_ingles&quot;                             </span></span>
+<span id="cb15-149"><a href="#cb15-149" tabindex="-1"></a><span class="co">#&gt; [47] &quot;calculo_erro_amostral&quot;                                        </span></span>
+<span id="cb15-150"><a href="#cb15-150" tabindex="-1"></a><span class="co">#&gt; [48] &quot;calculo_erro_amostral_ingles&quot;                                 </span></span>
+<span id="cb15-151"><a href="#cb15-151" tabindex="-1"></a><span class="co">#&gt; [49] &quot;outras_info_qualidade&quot;                                        </span></span>
+<span id="cb15-152"><a href="#cb15-152" tabindex="-1"></a><span class="co">#&gt; [50] &quot;outras_info_qualidade_ingles&quot;                                 </span></span>
+<span id="cb15-153"><a href="#cb15-153" tabindex="-1"></a><span class="co">#&gt; [51] &quot;autoridade_acesso&quot;                                            </span></span>
+<span id="cb15-154"><a href="#cb15-154" tabindex="-1"></a><span class="co">#&gt; [52] &quot;autoridade_acesso_ingles&quot;                                     </span></span>
+<span id="cb15-155"><a href="#cb15-155" tabindex="-1"></a><span class="co">#&gt; [53] &quot;confidencialidade&quot;                                            </span></span>
+<span id="cb15-156"><a href="#cb15-156" tabindex="-1"></a><span class="co">#&gt; [54] &quot;confidencialidade_ingles&quot;                                     </span></span>
+<span id="cb15-157"><a href="#cb15-157" tabindex="-1"></a><span class="co">#&gt; [55] &quot;condicoes_acesso&quot;                                             </span></span>
+<span id="cb15-158"><a href="#cb15-158" tabindex="-1"></a><span class="co">#&gt; [56] &quot;condicoes_acesso_ingles&quot;                                      </span></span>
+<span id="cb15-159"><a href="#cb15-159" tabindex="-1"></a><span class="co">#&gt; [57] &quot;referencia_citacao_fonte&quot;                                     </span></span>
+<span id="cb15-160"><a href="#cb15-160" tabindex="-1"></a><span class="co">#&gt; [58] &quot;referencia_citacao_fonte_ingles&quot;                              </span></span>
+<span id="cb15-161"><a href="#cb15-161" tabindex="-1"></a><span class="co">#&gt; [59] &quot;base_legal&quot;                                                   </span></span>
+<span id="cb15-162"><a href="#cb15-162" tabindex="-1"></a><span class="co">#&gt; [60] &quot;base_legal_ingles&quot;                                            </span></span>
+<span id="cb15-163"><a href="#cb15-163" tabindex="-1"></a><span class="co">#&gt; [61] &quot;direitos_autorais&quot;                                            </span></span>
+<span id="cb15-164"><a href="#cb15-164" tabindex="-1"></a><span class="co">#&gt; [62] &quot;direitos_autorais_ingles&quot;                                     </span></span>
+<span id="cb15-165"><a href="#cb15-165" tabindex="-1"></a><span class="co">#&gt; [63] &quot;contato&quot;                                                      </span></span>
+<span id="cb15-166"><a href="#cb15-166" tabindex="-1"></a><span class="co">#&gt; [64] &quot;contato_ingles&quot;                                               </span></span>
+<span id="cb15-167"><a href="#cb15-167" tabindex="-1"></a><span class="co">#&gt; [65] &quot;procedimento_amostragem&quot;                                      </span></span>
+<span id="cb15-168"><a href="#cb15-168" tabindex="-1"></a><span class="co">#&gt; [66] &quot;procedimento_amostragem_ingles&quot;                               </span></span>
+<span id="cb15-169"><a href="#cb15-169" tabindex="-1"></a><span class="co">#&gt; [67] &quot;ocorrencias_variavel&quot;                                         </span></span>
+<span id="cb15-170"><a href="#cb15-170" tabindex="-1"></a><span class="co">#&gt; [68] &quot;qualidade&quot;                                                    </span></span>
+<span id="cb15-171"><a href="#cb15-171" tabindex="-1"></a><span class="co">#&gt; [69] &quot;observacoes_sidra&quot;                                            </span></span>
+<span id="cb15-172"><a href="#cb15-172" tabindex="-1"></a><span class="co">#&gt; [70] &quot;observacoes_sidra_ingles&quot;                                     </span></span>
+<span id="cb15-173"><a href="#cb15-173" tabindex="-1"></a><span class="co">#&gt; [71] &quot;recomendacoes_internacionais_referencias_metodologicas&quot;       </span></span>
+<span id="cb15-174"><a href="#cb15-174" tabindex="-1"></a><span class="co">#&gt; [72] &quot;recomendacoes_internacionais_referencias_metodologicas_ingles&quot;</span></span>
+<span id="cb15-175"><a href="#cb15-175" tabindex="-1"></a><span class="co">#&gt; [73] &quot;ano&quot;                                                          </span></span>
+<span id="cb15-176"><a href="#cb15-176" tabindex="-1"></a><span class="co">#&gt; [74] &quot;mes&quot;                                                          </span></span>
+<span id="cb15-177"><a href="#cb15-177" tabindex="-1"></a><span class="co">#&gt; [75] &quot;ordem_periodo&quot;                                                </span></span>
+<span id="cb15-178"><a href="#cb15-178" tabindex="-1"></a><span class="co">#&gt; [76] &quot;nome_ocorrencia&quot;                                              </span></span>
+<span id="cb15-179"><a href="#cb15-179" tabindex="-1"></a><span class="co">#&gt; [77] &quot;nome_ocorrencia_ingles&quot;</span></span></code></pre></div>
 <p>Survey codes are validated before each request. If you use a wrong
 code, the error suggests similar alternatives:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">ibge_survey_periods</span>(<span class="st">&quot;PMS&quot;</span>)</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt; Error: Survey code &quot;PMS&quot; not found in the IBGE catalog.</span></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; ℹ Did you mean one of these?</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt;   * SC - Pesquisa Mensal de Serviços</span></span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt;   * MC - Pesquisa Mensal de Comércio</span></span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt;   ...</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">ibge_survey_periods</span>(<span class="st">&quot;PMS&quot;</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="co">#&gt; ! Survey code &quot;PMS&quot; not found in the IBGE catalog.</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#&gt; ℹ Did you mean one of these?</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co">#&gt; •  PM - Pesquisa de Informações Básicas Municipais</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co">#&gt; •  AM - Pesquisa de Assistência Médico-Sanitária</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co">#&gt; •  PT - Pesquisa de Serviços de Tecnologia da Informação</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co">#&gt; •  TS - Conta Satélite da Saúde</span></span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co">#&gt; •  VS - Produção da Extração Vegetal e da Silvicultura</span></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co">#&gt; → Use `ibge_surveys()` to see all 100 valid codes.</span></span></code></pre></div>
 </div>
-<div id="api-limits-and-special-values" class="section level2">
-<h2>API limits and special values</h2>
-<p>Each request can return at most <strong>100,000 values</strong>,
-computed as:</p>
-<blockquote>
-<p>categories × periods × localities ≤ 100,000</p>
-</blockquote>
-<p>If exceeded, the API returns HTTP 500. Split your request into
-smaller chunks when working with many localities or categories.</p>
-<p>The <code>value</code> column may contain special characters instead
-of numbers:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Value</th>
-<th>Meaning</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>-</code></td>
-<td>Numeric zero (not from rounding)</td>
-</tr>
-<tr class="even">
-<td><code>..</code></td>
-<td>Not applicable</td>
-</tr>
-<tr class="odd">
-<td><code>...</code></td>
-<td>Data not available</td>
-</tr>
-<tr class="even">
-<td><code>X</code></td>
-<td>Suppressed to avoid identifying individual respondents</td>
-</tr>
-</tbody>
-</table>
-<p>These come through as character strings in the <code>value</code>
-column. Use <code>parse_ibge_value()</code> to convert to numeric in one
-step:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">parse_ibge_value</span>(value))</span></code></pre></div>
+<div id="special-values" class="section level2">
+<h2>Special values</h2>
+<p>The <code>value</code> column may contain special codes instead of
+numbers (<code>-</code>, <code>..</code>, <code>...</code>,
+<code>X</code>), so it comes through as a character column. Use
+<code>parse_ibge_value()</code> to convert it to numeric in one step —
+its documentation (<code>?parse_ibge_value</code>) has the full table of
+codes and how each one is handled:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">ibge_variables</span>(<span class="dv">7060</span>, <span class="at">variable =</span> <span class="dv">63</span>, <span class="at">localities =</span> <span class="st">&quot;BR&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value =</span> <span class="fu">parse_ibge_value</span>(value))</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching metadata for aggregate 7060 from IBGE API...</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching metadata for aggregate 7060 from IBGE API... [114ms]</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="co">#&gt; ✔ Aggregate 7060: 4 variables,</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="co">#&gt; 1 classification, 457 categories.</span></span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="co">#&gt; ℹ Fetching variables for aggregate 7060 from IBGE API...</span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="co">#&gt; ✔ Fetching variables for aggregate 7060 from IBGE API... [104ms]</span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co">#&gt; ✔ 6 records retrieved.</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 9</span></span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt;   variable_id variable_name         variable_unit classification_315 locality_id</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;chr&gt;                 &lt;chr&gt;         &lt;chr&gt;              &lt;chr&gt;      </span></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="co">#&gt; 1 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="co">#&gt; 2 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co">#&gt; 3 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="co">#&gt; 4 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a><span class="co">#&gt; 5 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="co">#&gt; 6 63          IPCA - Variação mens… %             Índice geral       1          </span></span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a><span class="co">#&gt; # ℹ 4 more variables: locality_name &lt;chr&gt;, locality_level &lt;chr&gt;, period &lt;chr&gt;,</span></span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a><span class="co">#&gt; #   value &lt;dbl&gt;</span></span></code></pre></div>
+<hr />
+<p>This vignette was last built on 2026-09-22 against the live IBGE
+API.</p>
 </div>
 
 

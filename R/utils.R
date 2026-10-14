@@ -6,9 +6,15 @@ ibge_base_url <- "https://servicodados.ibge.gov.br/api/v3/agregados"
 #' @param ... Path segments (concatenated with `/`)
 #' @param query Named list of query parameters
 #' @param .label Friendly label for cli messages
+#' @param .data_request Logical. `TRUE` for the `variaveis` (data) endpoint,
+#'   whose HTTP 500 errors usually mean the result exceeds the API's size
+#'   limit. Other endpoints answer 500 to invalid parameters (unknown
+#'   aggregate, unparseable filter), so the size-limit hint is misleading
+#'   there and is not shown.
 #' @return Parsed JSON response as a list
 #' @noRd
-ibge_request <- function(..., query = list(), .label = "data") {
+ibge_request <- function(..., query = list(), .label = "data",
+                         .data_request = FALSE) {
 
   path_parts <- c(...)
   url <- paste(c(ibge_base_url, path_parts), collapse = "/")
@@ -29,16 +35,7 @@ ibge_request <- function(..., query = list(), .label = "data") {
     req,
     is_error = function(resp) httr2::resp_status(resp) >= 400,
     body = function(resp) {
-      status <- httr2::resp_status(resp)
-      if (status == 500) {
-        paste0(
-          "The API returned error 500. This may indicate the query ",
-          "exceeds the 100,000 value limit. ",
-          "Try reducing localities, periods or categories."
-        )
-      } else {
-        paste0("HTTP error ", status)
-      }
+      http_error_hint(httr2::resp_status(resp), .data_request)
     }
   )
 
@@ -58,6 +55,33 @@ ibge_request <- function(..., query = list(), .label = "data") {
   cli::cli_progress_done()
 
   result
+}
+
+#' Explain an HTTP error status from the IBGE API
+#'
+#' The API answers 500 both to oversized data queries and to requests with
+#' parameters it cannot parse (a non-existent aggregate id, an unknown
+#' periodicity code, ...). The size-limit hint is only relevant for the
+#' data endpoint.
+#' @noRd
+http_error_hint <- function(status, data_request = FALSE) {
+  if (status != 500) return(paste0("HTTP error ", status))
+
+  if (data_request) {
+    paste0(
+      "The API returned error 500. This usually means the query ",
+      "exceeds the API's result-size limit (documented as 100,000 ",
+      "values, in practice around 50,000). ",
+      "Try reducing localities, periods or categories, or let ",
+      "`chunk = TRUE` split the request automatically."
+    )
+  } else {
+    paste0(
+      "The API returned error 500. The IBGE API responds with 500 when ",
+      "it cannot interpret a request, e.g. a non-existent aggregate id ",
+      "or an invalid filter value. Check the parameters."
+    )
+  }
 }
 
 #' Safely extract a value from a list
@@ -118,8 +142,9 @@ format_localities <- function(localities) {
 
   if (!is.list(localities) || is.null(names(localities))) {
     cli::cli_abort(c(
-      "{.arg localities} must be {.val BR}, a level code (e.g. {.val N3}) or a named list.",
-      "i" = 'Example: {.code list(N6 = c(3550308, 3304557))}'
+      "{.arg localities} must be {.val BR}, a level code (e.g. {.val N3})
+       or a named list.",
+      "i" = "Example: {.code list(N6 = c(3550308, 3304557))}"
     ), call = NULL)
   }
 
@@ -176,13 +201,12 @@ format_variable <- function(variable) {
 #' parse_ibge_value(c("1.5", "10", "-", "..", "...", "X", NA))
 #' #> [1] 1.5  10.0  0.0   NA    NA    NA    NA
 #'
-#' \dontrun{
+#' @examplesIf interactive()
 #' # Typical usage after ibge_variables()
 #' library(dplyr)
 #'
 #' ibge_variables(7060, localities = "BR") |>
 #'   mutate(value = parse_ibge_value(value))
-#' }
 #'
 #' @export
 parse_ibge_value <- function(x) {
